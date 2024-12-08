@@ -1,5 +1,5 @@
 module.exports = {
   moduleNameMapper: {
-    "./native": "<rootDir>/__mocks__/native.js",
+    "./native": "<rootDir>/__mocks__/src/native.js",
   },
 };

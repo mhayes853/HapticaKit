@@ -2,7 +2,7 @@
 module.exports = {
   testEnvironment: "node",
   moduleNameMapper: {
-    "./native": "<rootDir>/__mocks__/native.js",
+    "./native": "<rootDir>/src/__mocks__/native.js",
   },
   transform: {
     "^.+.tsx?$": ["ts-jest", {}],

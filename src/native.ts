@@ -25,4 +25,22 @@ export default {
   _hapticaDeviceHardwareHapticsCompatability() {
     throw new Error("Unimplemented");
   },
+  _hapticaKeyValueStorageValue(key: string): string | undefined {
+    throw new Error("Unimplemented");
+  },
+  _hapticaKeyValueStorageSetValue(key: string, value: string) {
+    throw new Error("Unimplemented");
+  },
+  _hapticaKeyValueStorageRemoveValue(key: string) {
+    throw new Error("Unimplemented");
+  },
+  _hapticaSecureStorageValue(key: string): string | undefined {
+    throw new Error("Unimplemented");
+  },
+  _hapticaSecureStorageSetValue(key: string, value: string) {
+    throw new Error("Unimplemented");
+  },
+  _hapticaSecureStorageRemoveValue(key: string) {
+    throw new Error("Unimplemented");
+  },
 };
