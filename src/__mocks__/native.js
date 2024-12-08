@@ -26,7 +26,7 @@ module.exports._hapticaKeyValueStorageRemoveValue = (key) => {
 
 let secureStorage = new Map();
 module.exports._hapticaSecureStorageValue = (key) => {
-  return secureStorage.get(key);
+  return secureStorage.get(key) ?? undefined;
 };
 module.exports._hapticaSecureStorageSetValue = (key, value) => {
   secureStorage.set(key, value);
