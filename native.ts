@@ -16,4 +16,13 @@ export default {
   _hapticaSettingsResetValues() {
     throw new Error("Unimplemented");
   },
+  _hapticaDeviceName(): string {
+    throw new Error("Unimplemented");
+  },
+  _hapticaDeviceOSVersion(): string {
+    throw new Error("Unimplemented");
+  },
+  _hapticaDeviceHardwareHapticsCompatability() {
+    throw new Error("Unimplemented");
+  },
 };
