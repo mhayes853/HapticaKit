@@ -8,9 +8,6 @@
     "test": "jest",
     "bundle": "webpack"
   },
-  "jest": {
-    "preset": "./jest-preset.js"
-  },
   "author": "",
   "license": "ISC",
   "devDependencies": {

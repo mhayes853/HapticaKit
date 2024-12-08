@@ -1,4 +1,11 @@
 const crypto = require("crypto");
 
-let extensionId = crypto.randomUUID();
+const extensionId = crypto.randomUUID();
 module.exports._hapticaExtensionID = () => extensionId;
+
+let settings = new Map();
+module.exports._hapticaSettingsValue = (key) => settings.get(key);
+module.exports._hapticaSetSettingsValue = (key, value) => {
+  settings.set(key, value);
+};
+module.exports._hapticaSettingsResetValues = () => (settings = new Map());

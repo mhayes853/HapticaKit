@@ -1,10 +1,17 @@
-import { extension, HapticaExtensionError } from "./haptica-extension";
+import { HapticaExtensionError } from "./error";
+import { extension } from "./haptica-extension";
 
 describe("HapticExtension tests", () => {
   beforeEach(() => extension.reset());
 
   it("should use a uuid for the mocked extension id", () => {
     expect(isUUIDv4(extension.id)).toEqual(true);
+  });
+
+  it("should throw an error when trying to get settings for unregistered extension", () => {
+    expect(() => extension.settings()).toThrow(
+      HapticaExtensionError.MANIFEST_NOT_REGISTERED,
+    );
   });
 
   it("should not indicate that a manifest has been registered by default", () => {

@@ -1,5 +1,12 @@
 import { AHAPPattern } from "./ahap";
+import { HapticaExtensionError } from "./error";
 import native from "./native";
+import {
+  HapticaExtensionSettings,
+  HapticaExtensionSettingsChange,
+  HapticaExtensionSettingsSchema,
+} from "./settings";
+import { _hapticaInternalConstructorCheck } from "./utils";
 
 export type HapticaPatternID = string;
 export type HapticaExtensionID = string;
@@ -9,11 +16,6 @@ export type HapticaPattern = {
   name: string;
   ahapPattern: AHAPPattern;
   audioFiles: File[];
-};
-
-export type HapticaExtensionSettingsChange = {
-  key: string;
-  value: any;
 };
 
 /**
@@ -49,13 +51,10 @@ export type HapticaExtensionManifest = {
   /**
    * A description of the settings of this extension.
    */
-  settingsSchema?: any;
+  settingsSchemas?: HapticaExtensionSettingsSchema[];
 
   /**
    * A callback the runs whenever the user changes your extension's settings.
-   *
-   * This callback does not run when the settings are programatically changed by your extension's
-   * code, only when the user changes the settings externally.
    *
    * @param changes A list of {@link HapticaExtensionSettingsChange}s.
    */
@@ -106,30 +105,6 @@ export type HapticaExtensionManifest = {
   onLoadPatterns?: () => Promise<HapticaPattern[]>;
 };
 
-declare global {
-  interface SymbolConstructor {
-    _hapticaPrivate: Symbol;
-  }
-}
-
-Symbol._hapticaPrivate = Symbol("_hapticaPrivate");
-
-/**
- * An Error subclass thrown by APIs that serve haptica extensions.
- */
-export class HapticaExtensionError extends Error {
-  private constructor(message: string) {
-    super(message);
-  }
-
-  /**
-   * An error thrown when registering a manifest more than once.
-   */
-  static MANIFEST_ALREADY_REGISTERED = new HapticaExtensionError(
-    "A manifest has already been registered. You cannot register a manifest more than once. If you wish to reset the extension, call `extension.reset`.",
-  );
-}
-
 /**
  * A class representing a Haptica Extension.
  *
@@ -137,6 +112,7 @@ export class HapticaExtensionError extends Error {
  */
 export class HapticaExtension {
   private _manifest?: HapticaExtensionManifest;
+  private _settings?: HapticaExtensionSettings;
 
   /**
    * The unique identifier for this extension.
@@ -160,9 +136,14 @@ export class HapticaExtension {
   }
 
   constructor(key: Symbol) {
-    if (key !== Symbol._hapticaPrivate) {
-      throw new TypeError("Illegal constructor");
+    _hapticaInternalConstructorCheck(key);
+  }
+
+  settings() {
+    if (!this._settings) {
+      throw HapticaExtensionError.MANIFEST_NOT_REGISTERED;
     }
+    return this._settings;
   }
 
   /**
@@ -181,6 +162,10 @@ export class HapticaExtension {
       throw HapticaExtensionError.MANIFEST_ALREADY_REGISTERED;
     }
     this._manifest = manifest;
+    this._settings = new HapticaExtensionSettings(
+      manifest.settingsSchemas ?? [],
+      Symbol._hapticaPrivate,
+    );
   }
 
   /**
@@ -188,6 +173,7 @@ export class HapticaExtension {
    */
   reset() {
     this._manifest = undefined;
+    this._settings?.reset();
   }
 }
 
