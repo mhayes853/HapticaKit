@@ -1,2 +1,2 @@
 export * from "./ahap";
-export * from "./haptica";
+export * from "./haptica-extension";
