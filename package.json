@@ -1,7 +1,7 @@
 {
   "name": "haptica-kit",
-  "version": "0.1.0",
-  "description": "",
+  "version": "0.0.3",
+  "description": "A package for writing extensions for the haptica app.",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -9,7 +9,7 @@
     "bundle": "webpack"
   },
   "typings": "index.d.ts",
-  "author": "",
+  "author": "Matthew Hayes",
   "license": "ISC",
   "devDependencies": {
     "@types/jest": "^29.5.14",
