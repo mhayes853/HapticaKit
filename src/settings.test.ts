@@ -13,7 +13,7 @@ describe("HapticaExtensionSettings tests", () => {
         { type: "text-field", name: "blob", defaultValue: "hello world" },
       ],
     });
-    settings = extension.settings();
+    settings = extension.settings;
   });
 
   it("should use the default value when no value for setting", () => {

@@ -1,5 +1,5 @@
 module.exports = {
   moduleNameMapper: {
-    "./native": "<rootDir>/__mocks__/src/native.js",
+    "./native": "<rootDir>/node_modules/haptica-kit/src/__mocks__/native.js",
   },
 };

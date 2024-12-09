@@ -9,7 +9,7 @@ describe("HapticExtension tests", () => {
   });
 
   it("should throw an error when trying to get settings for unregistered extension", () => {
-    expect(() => extension.settings()).toThrow(
+    expect(() => extension.settings).toThrow(
       HapticaExtensionError.MANIFEST_NOT_REGISTERED,
     );
   });

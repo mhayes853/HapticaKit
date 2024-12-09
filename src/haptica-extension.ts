@@ -1,6 +1,6 @@
-import { AHAPPattern } from "./ahap";
 import { HapticaExtensionError } from "./error";
 import native from "./native";
+import { HapticaPattern } from "./patterns";
 import {
   HapticaExtensionSettings,
   HapticaExtensionSettingsChange,
@@ -8,15 +8,7 @@ import {
 } from "./settings";
 import { _hapticaInternalConstructorCheck } from "./utils";
 
-export type HapticaPatternID = string;
 export type HapticaExtensionID = string;
-
-export type HapticaPattern = {
-  id: HapticaPatternID;
-  name: string;
-  ahapPattern: AHAPPattern;
-  audioFiles: File[];
-};
 
 /**
  * A type describing the capabilities of a Haptica Extension.
@@ -96,13 +88,6 @@ export type HapticaExtensionManifest = {
    * @param pattern An {@link HapticaPattern}.
    */
   onPatternDeleted?: (pattern: HapticaPattern) => Promise<void>;
-
-  /**
-   * A callback that loads haptic patterns on the haptic patterns list screen.
-   *
-   * @returns A list of {@link HapticaPattern}s.
-   */
-  onLoadPatterns?: () => Promise<HapticaPattern[]>;
 };
 
 /**
@@ -129,6 +114,16 @@ export class HapticaExtension {
   }
 
   /**
+   * The {@link HapticaExtensionSettings} for your extension.
+   */
+  get settings() {
+    if (!this._settings) {
+      throw HapticaExtensionError.MANIFEST_NOT_REGISTERED;
+    }
+    return this._settings;
+  }
+
+  /**
    * True if an {@link HapticaExtensionManifest} has been registered.
    */
   get isManifestRegistered() {
@@ -137,13 +132,6 @@ export class HapticaExtension {
 
   constructor(key: Symbol) {
     _hapticaInternalConstructorCheck(key);
-  }
-
-  settings() {
-    if (!this._settings) {
-      throw HapticaExtensionError.MANIFEST_NOT_REGISTERED;
-    }
-    return this._settings;
   }
 
   /**

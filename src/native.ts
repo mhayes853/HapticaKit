@@ -1,4 +1,5 @@
 import { HapticaExtensionID } from "./haptica-extension";
+import { HapticsPatternsHandle } from "./patterns";
 import { HapticaExtensionSettingsValue } from "./settings";
 
 export default {
@@ -41,6 +42,11 @@ export default {
     throw new Error("Unimplemented");
   },
   _hapticaSecureStorageRemoveValue(key: string) {
+    throw new Error("Unimplemented");
+  },
+  async _hapticaPatternsWithTransaction<T>(
+    fn: (handle: HapticsPatternsHandle) => T,
+  ) {
     throw new Error("Unimplemented");
   },
 };

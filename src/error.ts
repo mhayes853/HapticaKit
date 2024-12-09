@@ -1,3 +1,5 @@
+import { HapticaPatternID } from "./patterns";
+
 /**
  * An Error subclass thrown by APIs that serve haptica extensions.
  */
@@ -40,5 +42,9 @@ export class HapticaExtensionError extends Error {
     return new HapticaExtensionError(
       `'${type}' is not a valid type for setting '${name}'. Expected '${expectedType}'.`,
     );
+  }
+
+  static patternWithIdNotFound(id: HapticaPatternID) {
+    return new HapticaExtensionError(`Pattern with id '${id}' was not found.`);
   }
 }
