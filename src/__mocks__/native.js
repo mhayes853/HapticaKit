@@ -11,8 +11,8 @@ module.exports._hapticaSetSettingsValue = (key, value) => {
 };
 module.exports._hapticaSettingsResetValues = () => (settings = new Map());
 
-module.exports._hapticaDeviceName = () => "jest-testing-device";
-module.exports._hapticaDeviceOSVersion = () => "jest";
+module.exports._hapticaDeviceName = () => "test-device";
+module.exports._hapticaDeviceOSVersion = () => "test";
 
 let keyValueStorage = new Map();
 beforeEach(() => (keyValueStorage = new Map()));
