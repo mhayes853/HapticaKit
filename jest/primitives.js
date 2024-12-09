@@ -125,6 +125,9 @@ class _HapticaPrimitives {
     this.#secureStorage = new Map();
     this.#patterns = [];
   }
+
+  registerManifest(manifest) {}
+  unregisterManifest() {}
 }
 
 global._hapticaPrimitives = new _HapticaPrimitives();

@@ -148,6 +148,7 @@ export class HapticaExtension {
     if (this.isManifestRegistered) {
       throw HapticaExtensionError.MANIFEST_ALREADY_REGISTERED;
     }
+    _hapticaPrimitives.registerManifest(manifest);
     this._manifest = manifest;
     this._settings = new HapticaExtensionSettings(
       manifest.settingsSchemas ?? [],
@@ -159,6 +160,7 @@ export class HapticaExtension {
    * Resets this extension.
    */
   reset() {
+    _hapticaPrimitives.unregisterManifest();
     this._manifest = undefined;
     this._settings?.reset();
   }
