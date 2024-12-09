@@ -1,5 +1,4 @@
 import { AHAPPattern } from "./ahap";
-import native from "./native";
 import { _hapticaInternalConstructorCheck } from "./utils";
 
 export type HapticaPatternID = string;
@@ -52,7 +51,7 @@ export type HapticaPatternSave = Omit<
  *
  * You get an instance of this interface by calling `withTransaction` on {@link HapticaPatterns}.
  */
-export interface HapticsPatternsHandle {
+export interface HapticaPatternsHandle {
   /**
    * Loads the stored patterns of this extension.
    *
@@ -98,8 +97,8 @@ export class HapticaPatterns {
    * @param fn A function to run with exclusive access to the patterns storage.
    * @returns Whatever `fn` returns.
    */
-  async withTransaction<T>(fn: (handle: HapticsPatternsHandle) => T) {
-    return await native._hapticaPatternsWithTransaction(fn);
+  async withTransaction<T>(fn: (handle: HapticaPatternsHandle) => T) {
+    return await _hapticaPrimitives.patternsWithTransaction(fn);
   }
 }
 

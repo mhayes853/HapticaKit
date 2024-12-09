@@ -1,5 +1,4 @@
 import { HapticaExtensionError } from "./error";
-import native from "./native";
 import { HapticaPattern } from "./patterns";
 import {
   HapticaExtensionSettings,
@@ -103,7 +102,7 @@ export class HapticaExtension {
    * The unique identifier for this extension.
    */
   get id(): HapticaExtensionID {
-    return native._hapticaExtensionID();
+    return _hapticaPrimitives.extensionID();
   }
 
   /**

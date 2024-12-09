@@ -1,4 +1,3 @@
-import native from "./native";
 import { _hapticaInternalConstructorCheck } from "./utils";
 
 /**
@@ -15,21 +14,21 @@ export class KeyValueStorage {
    * Returns the value for the specified key or undefined if no value exists.
    */
   value(key: string) {
-    return native._hapticaKeyValueStorageValue(key);
+    return _hapticaPrimitives.keyValueStorageValue(key);
   }
 
   /**
    * Sets the value for the specified key.
    */
   setValue(key: string, value: string) {
-    native._hapticaKeyValueStorageSetValue(key, value);
+    _hapticaPrimitives.keyValueStorageSetValue(key, value);
   }
 
   /**
    * Removes the value for the specified key.
    */
   removeValue(key: string) {
-    native._hapticaKeyValueStorageRemoveValue(key);
+    _hapticaPrimitives.keyValueStorageRemoveValue(key);
   }
 }
 
@@ -55,21 +54,21 @@ export class SecureStorage {
    * Returns the value for the specified key or undefined if no value exists.
    */
   value(key: string) {
-    return native._hapticaSecureStorageValue(key);
+    return _hapticaPrimitives.secureStorageValue(key);
   }
 
   /**
    * Sets the value for the specified key.
    */
   setValue(key: string, value: string) {
-    native._hapticaSecureStorageSetValue(key, value);
+    _hapticaPrimitives.secureStorageSetValue(key, value);
   }
 
   /**
    * Removes the value for the specified key.
    */
   removeValue(key: string) {
-    native._hapticaSecureStorageRemoveValue(key);
+    _hapticaPrimitives.secureStorageRemoveValue(key);
   }
 }
 

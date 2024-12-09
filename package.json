@@ -1,6 +1,6 @@
 {
   "name": "haptica-kit",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "./dist/index.js",
   "scripts": {
@@ -8,6 +8,7 @@
     "test": "jest",
     "bundle": "webpack"
   },
+  "typings": "index.d.ts",
   "author": "",
   "license": "ISC",
   "devDependencies": {

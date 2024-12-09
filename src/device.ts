@@ -1,4 +1,3 @@
-import native from "./native";
 import { _hapticaInternalConstructorCheck } from "./utils";
 
 export type DeviceHapticsHardwareCompatability = {
@@ -16,21 +15,21 @@ export class Device {
    * The model name of the user's device.
    */
   get name() {
-    return native._hapticaDeviceName();
+    return _hapticaPrimitives.deviceName();
   }
 
   /**
    * The os version of the user's device.
    */
   get osVersion() {
-    return native._hapticaDeviceOSVersion();
+    return _hapticaPrimitives.deviceOSVersion();
   }
 
   /**
    * The hardware haptic compatability of the user's device.
    */
   get hapticHardwareCompatability(): DeviceHapticsHardwareCompatability {
-    return native._hapticaDeviceHardwareHapticsCompatability();
+    return _hapticaPrimitives.deviceHardwareHapticsCompatability();
   }
 
   constructor(key: Symbol) {

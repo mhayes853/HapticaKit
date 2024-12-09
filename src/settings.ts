@@ -1,5 +1,4 @@
 import { HapticaExtensionError } from "./error";
-import native from "./native";
 import { _hapticaInternalConstructorCheck } from "./utils";
 
 export type HapticaExtensionSettingsValue =
@@ -107,7 +106,7 @@ export class HapticaExtensionSettings {
    */
   value(settingName: string): HapticaExtensionSettingsValue {
     this.checkSettingName(settingName);
-    const nativeValue = native._hapticaSettingsValue(settingName);
+    const nativeValue = _hapticaPrimitives.settingsValue(settingName);
     if (nativeValue) return nativeValue;
     return this.schemas.find((s) => s.name === settingName)?.defaultValue;
   }
@@ -121,7 +120,7 @@ export class HapticaExtensionSettings {
   setValue(settingName: string, value: HapticaExtensionSettingsValue) {
     const schema = this.checkSettingName(settingName);
     this.checkValueType(settingName, schema.type, value);
-    native._hapticaSetSettingsValue(settingName, value);
+    _hapticaPrimitives.setSettingsValue(settingName, value);
   }
 
   /**
@@ -137,7 +136,7 @@ export class HapticaExtensionSettings {
    * Resets all settings to their default values.
    */
   reset() {
-    native._hapticaSettingsResetValues();
+    _hapticaPrimitives.settingsResetValues();
   }
 
   private checkSettingName(name: string) {
