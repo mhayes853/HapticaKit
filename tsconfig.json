@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "removeComments": true,
     "target": "ES5",
     "module": "CommonJS",
     "strict": true,
@@ -7,5 +8,5 @@
     "outDir": "dist",
     "esModuleInterop": true
   },
-  "include": ["*", "src/**/*"]
+  "include": ["*"]
 }

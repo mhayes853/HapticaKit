@@ -1,2 +1,2 @@
-export * from "./src";
+export * from "./index";
 export * from "./global";

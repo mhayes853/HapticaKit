@@ -4,7 +4,7 @@ import {
   DeviceHapticsHardwareCompatability,
   HapticaPatternsHandle,
   HapticaExtensionManifest,
-} from "./src";
+} from "./index";
 
 declare global {
   interface _HapticaPrimitives {
