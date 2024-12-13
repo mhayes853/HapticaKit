@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { HapticaExtensionError } = require("../src/error");
+const { HapticaExtensionError } = require("../index");
 
 const DEFAULT_PATTERN = {
   name: "",
