@@ -72,8 +72,8 @@ class _HapticaPrimitives {
     this.#settings.set(key, value);
   }
 
-  settingsResetValues() {
-    this.#settings = new Map();
+  settingsResetValues(keys) {
+    keys.forEach((k) => this.#settings.delete(k));
   }
 
   deviceName() {

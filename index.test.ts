@@ -260,6 +260,22 @@ describe("HapticaKit tests", () => {
       expect(settings.value("test")).toEqual(true);
     });
 
+    it("should be able to reset a single setting to its defaults", () => {
+      settings.setValue("blob", "test");
+      settings.setValue("test", false);
+      settings.reset("blob");
+      expect(settings.value("blob")).toEqual("hello world");
+      expect(settings.value("test")).toEqual(false);
+    });
+
+    it("should be able to reset multiple settings to their defaults", () => {
+      settings.setValue("blob", "test");
+      settings.setValue("test", false);
+      settings.reset(["blob", "test"]);
+      expect(settings.value("blob")).toEqual("hello world");
+      expect(settings.value("test")).toEqual(true);
+    });
+
     it("should throw an error when attempting to set an invalid typed value for setting", () => {
       expect(() => settings.setValue("blob", 10)).toThrow(
         HapticaExtensionError.invalidSettingNameType(

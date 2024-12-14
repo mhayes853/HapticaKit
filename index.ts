@@ -583,7 +583,7 @@ export type HapticaExtensionSettingsSchema =
  */
 export class HapticaExtensionSettings {
   constructor(
-    private readonly schemas: HapticaExtensionSettingsSchema[],
+    readonly schemas: HapticaExtensionSettingsSchema[],
     key: Symbol,
   ) {
     _hapticaInternalConstructorCheck(key);
@@ -598,7 +598,7 @@ export class HapticaExtensionSettings {
   value(settingName: string): HapticaExtensionSettingsValue {
     this.checkSettingName(settingName);
     const nativeValue = _hapticaPrimitives.settingsValue(settingName);
-    if (nativeValue) return nativeValue;
+    if (nativeValue !== undefined) return nativeValue;
     return this.schemas.find((s) => s.name === settingName)?.defaultValue;
   }
 
@@ -625,9 +625,17 @@ export class HapticaExtensionSettings {
 
   /**
    * Resets all settings to their default values.
+   *
+   * @param Specific keys or keys to reset. By default, all keys are reset.
    */
-  reset() {
-    _hapticaPrimitives.settingsResetValues();
+  reset(keys?: string | string[]) {
+    const keysToReset =
+      typeof keys === "undefined"
+        ? this.schemas.map((s) => s.name)
+        : typeof keys === "string"
+          ? [keys]
+          : keys;
+    _hapticaPrimitives.settingsResetValues(keysToReset);
   }
 
   private checkSettingName(name: string) {

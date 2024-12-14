@@ -16,7 +16,7 @@ declare global {
       value: HapticaExtensionSettingsValue,
       type: HapticaExtensionSettingsSchema["type"],
     ): void;
-    settingsResetValues(): void;
+    settingsResetValues(keys: string[]): void;
     deviceName(): string;
     deviceOSVersion(): string;
     deviceHardwareHapticsCompatability(): DeviceHapticsHardwareCompatability;
