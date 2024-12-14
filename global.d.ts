@@ -4,13 +4,18 @@ import {
   DeviceHapticsHardwareCompatability,
   HapticaPatternsHandle,
   HapticaExtensionManifest,
+  HapticaExtensionSettingsSchema,
 } from "./index";
 
 declare global {
   interface _HapticaPrimitives {
     extensionID(): HapticaExtensionID;
     settingsValue(key: string): HapticaExtensionSettingsValue | undefined;
-    setSettingsValue(key: string, value: HapticaExtensionSettingsValue): void;
+    setSettingsValue(
+      key: string,
+      value: HapticaExtensionSettingsValue,
+      type: HapticaExtensionSettingsSchema["type"],
+    ): void;
     settingsResetValues(): void;
     deviceName(): string;
     deviceOSVersion(): string;

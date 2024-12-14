@@ -611,7 +611,7 @@ export class HapticaExtensionSettings {
   setValue(settingName: string, value: HapticaExtensionSettingsValue) {
     const schema = this.checkSettingName(settingName);
     this.checkValueType(settingName, schema.type, value);
-    _hapticaPrimitives.setSettingsValue(settingName, value);
+    _hapticaPrimitives.setSettingsValue(settingName, value, schema.type);
   }
 
   /**
