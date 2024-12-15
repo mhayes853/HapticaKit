@@ -11,7 +11,7 @@ describe("HapticaKit tests", () => {
     beforeEach(() => extension.reset());
 
     it("should use a uuid for the mocked extension id", () => {
-      expect(isUUIDv4(extension.id)).toEqual(true);
+      expect(isUUIDv7(extension.id)).toEqual(true);
     });
 
     it("should throw an error when trying to get settings for unregistered extension", () => {
@@ -39,9 +39,9 @@ describe("HapticaKit tests", () => {
       );
     });
 
-    const isUUIDv4 = (uuid: string) => {
+    const isUUIDv7 = (uuid: string) => {
       const uuidV4Regex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       return uuidV4Regex.test(uuid);
     };
   });
@@ -127,7 +127,7 @@ describe("HapticaKit tests", () => {
 
     it("should save and load patterns", async () => {
       await patterns.withTransaction((handle) => {
-        const pattern = handle.save({
+        const pattern = handle.create({
           name: "Test",
           ahapPattern: TEST_AHAP_PATTERN,
           audioFiles: [],
@@ -139,12 +139,12 @@ describe("HapticaKit tests", () => {
 
     it("should edit a pattern when saving twice", async () => {
       await patterns.withTransaction((handle) => {
-        const pattern = handle.save({
+        const pattern = handle.create({
           name: "Test",
           ahapPattern: TEST_AHAP_PATTERN,
           audioFiles: [],
         });
-        handle.save({
+        handle.update({
           id: pattern.id,
           name: "Blob",
           ahapPattern: TEST_AHAP_PATTERN,
@@ -160,7 +160,7 @@ describe("HapticaKit tests", () => {
     it("should throw an error when attempting to edit a non-existent pattern", async () => {
       await patterns.withTransaction((handle) => {
         expect(() => {
-          handle.save({
+          handle.update({
             id: "dkljldkjkldj",
             name: "Blob",
             ahapPattern: TEST_AHAP_PATTERN,
@@ -172,12 +172,12 @@ describe("HapticaKit tests", () => {
 
     it("should be able to conditionally fetch patterns", async () => {
       await patterns.withTransaction((handle) => {
-        handle.save({
+        handle.create({
           name: "Test",
           ahapPattern: TEST_AHAP_PATTERN,
           audioFiles: [],
         });
-        const expectedPattern = handle.save({
+        const expectedPattern = handle.create({
           name: "Blob",
           ahapPattern: TEST_AHAP_PATTERN,
           audioFiles: [],
@@ -189,12 +189,12 @@ describe("HapticaKit tests", () => {
 
     it("should be able to delete patterns", async () => {
       await patterns.withTransaction((handle) => {
-        const { id } = handle.save({
+        const { id } = handle.create({
           name: "Test",
           ahapPattern: TEST_AHAP_PATTERN,
           audioFiles: [],
         });
-        const pattern2 = handle.save({
+        const pattern2 = handle.create({
           name: "Blob",
           ahapPattern: TEST_AHAP_PATTERN,
           audioFiles: [],

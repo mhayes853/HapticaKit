@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const uuid = require("uuid");
 const { HapticaExtensionError } = require("../index");
 
 const DEFAULT_PATTERN = {
@@ -20,32 +21,32 @@ class MockPatternsHandle {
     });
   }
 
-  save(patternSave) {
+  create(patternCreate) {
     const now = new Date();
-    if (!patternSave.id) {
-      const pattern = {
-        ...DEFAULT_PATTERN,
-        ...patternSave,
-        id: crypto.randomUUID(),
-        createdAt: now,
-        lastEditedAt: now,
-      };
-      this.patterns.push(pattern);
-      return pattern;
-    } else {
-      const patternIndex = this.patterns.findIndex(
-        (p) => p.id === patternSave.id,
-      );
-      if (patternIndex === -1) {
-        throw HapticaExtensionError.patternWithIdNotFound(patternSave.id);
-      }
-      this.patterns[patternIndex] = {
-        ...this.patterns[patternIndex],
-        ...patternSave,
-        lastEditedAt: now,
-      };
-      return this.patterns[patternIndex];
+    const pattern = {
+      ...DEFAULT_PATTERN,
+      ...patternCreate,
+      id: uuid.v7(),
+      createdAt: now,
+      lastEditedAt: now,
+    };
+    this.patterns.push(pattern);
+    return pattern;
+  }
+
+  update(patternUpdate) {
+    const patternIndex = this.patterns.findIndex(
+      (p) => p.id === patternUpdate.id,
+    );
+    if (patternIndex === -1) {
+      throw HapticaExtensionError.patternWithIdNotFound(patternUpdate.id);
     }
+    this.patterns[patternIndex] = {
+      ...this.patterns[patternIndex],
+      ...patternUpdate,
+      lastEditedAt: new Date(),
+    };
+    return this.patterns[patternIndex];
   }
 
   deletePattern(id) {
@@ -54,7 +55,7 @@ class MockPatternsHandle {
 }
 
 class _HapticaPrimitives {
-  #extensionId = crypto.randomUUID();
+  #extensionId = uuid.v7();
   #settings = new Map();
   #keyValueStorage = new Map();
   #secureStorage = new Map();

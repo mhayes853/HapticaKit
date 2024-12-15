@@ -287,12 +287,19 @@ export type HapticaPattern = {
 };
 
 /**
+ * Properties for creating an {@link HapticaPattern}.
+ */
+export type HapticaPatternCreate = Omit<
+  HapticaPattern,
+  "id" | "createdAt" | "lastEditedAt"
+>;
+
+/**
  * Properties for saving an {@link HapticaPattern}.
  */
-export type HapticaPatternSave = Omit<
-  Partial<HapticaPattern>,
-  "createdAt" | "lastEditedAt"
->;
+export type HapticaPatternUpdate = Partial<HapticaPatternCreate> & {
+  id: HapticaPatternID;
+};
 
 /**
  * An interface for fetching, editing, and deleting haptic patterns owned by your extension.
@@ -311,13 +318,18 @@ export interface HapticaPatternsHandle {
   ): HapticaPattern[];
 
   /**
+   * Creates and returns a new {@link HapticaPattern}.
+   *
+   * @param pattern An {@link HapticaPatternCreate}.
+   */
+  create(pattern: HapticaPatternCreate): HapticaPattern;
+
+  /**
    * Saves and returns the updated {@link HapticaPattern}.
    *
-   * If the id of the pattern is undefined, then a new pattern is created.
-   *
-   * @param pattern An {@link HapticaPatternSave}.
+   * @param pattern An {@link HapticaPatternUpdate}.
    */
-  save(pattern: HapticaPatternSave): HapticaPattern;
+  update(pattern: HapticaPatternUpdate): HapticaPattern;
 
   /**
    * Deletes the pattern with the specified id.
