@@ -57,7 +57,7 @@ class MockPatternsHandle {
   }
 }
 
-class _HapticaPrimitives {
+class MockHapticaPrimitives {
   #extensionId = uuid.v7();
   #settings = new Map();
   #keyValueStorage = new Map();
@@ -134,6 +134,21 @@ class _HapticaPrimitives {
   unregisterManifest() {}
 }
 
-global._hapticaPrimitives = new _HapticaPrimitives();
+class MockAudioFile {
+  filename;
+  #bytes;
+
+  constructor(filename, bytes) {
+    this.filename = filename;
+    this.#bytes = bytes;
+  }
+
+  bytes() {
+    return this.#bytes;
+  }
+}
+
+global._hapticaPrimitives = new MockHapticaPrimitives();
+global.HapticaAudioFile = MockAudioFile;
 
 beforeEach(() => global._hapticaPrimitives.reset());

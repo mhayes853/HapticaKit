@@ -251,6 +251,35 @@ export type DeviceHapticsHardwareCompatability = {
 
 export type HapticaPatternID = string;
 
+export interface HapticaAudioFileConstructor {
+  /**
+   * Constructs an {@link HapticaAudioFile}.
+   *
+   * @param filename The name of the file.
+   * @param data The audio data.
+   */
+  new (filename: string, data: Uint8Array): HapticaAudioFile;
+}
+
+export interface HapticaAudioFile {
+  /**
+   * The filename of this file.
+   */
+  get filename(): string;
+
+  /**
+   * Synchronously loads the bytes of this file.
+   */
+  bytes(): Uint8Array;
+}
+
+declare global {
+  /**
+   * An audio file from the app.
+   */
+  var HapticaAudioFile: HapticaAudioFileConstructor;
+}
+
 /**
  * A haptics pattern.
  */
@@ -273,7 +302,7 @@ export type HapticaPattern = {
   /**
    * An array of audio waveform files that are played with the pattern.
    */
-  audioFiles: File[];
+  audioFiles: HapticaAudioFile[];
 
   /**
    * The creation date of the pattern.

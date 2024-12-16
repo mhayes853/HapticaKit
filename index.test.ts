@@ -205,6 +205,21 @@ describe("HapticaKit tests", () => {
       });
     });
 
+    it("should be able to save and load", async () => {
+      await patterns.withTransaction((handle) => {
+        const file = new HapticaAudioFile("foo.mp3", new Uint8Array([0, 1]));
+        handle.create({
+          name: "Test",
+          ahapPattern: TEST_AHAP_PATTERN,
+          audioFiles: [file],
+        });
+        const patterns = handle.fetchPatterns();
+        expect(patterns[0].audioFiles[0].bytes()).toEqual(
+          new Uint8Array([0, 1]),
+        );
+      });
+    });
+
     it("should be able to detect when a pattern is stored", async () => {
       await patterns.withTransaction((handle) => {
         expect(handle.containsPatternWithId("skljkldjkldj")).toEqual(false);
