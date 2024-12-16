@@ -52,6 +52,10 @@ class MockPatternsHandle {
   deletePattern(id) {
     this.patterns = this.patterns.filter((p) => p.id !== id);
   }
+
+  containsPatternWithId(id) {
+    return this.patterns.findIndex((p) => p.id === id) !== -1;
+  }
 }
 
 class _HapticaPrimitives {

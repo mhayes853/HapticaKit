@@ -204,6 +204,20 @@ describe("HapticaKit tests", () => {
         expect(patterns).toEqual([pattern2]);
       });
     });
+
+    it("should be able to detect when a pattern is stored", async () => {
+      await patterns.withTransaction((handle) => {
+        expect(handle.containsPatternWithId("skljkldjkldj")).toEqual(false);
+        const pattern = handle.create({
+          name: "Test",
+          ahapPattern: TEST_AHAP_PATTERN,
+          audioFiles: [],
+        });
+        expect(handle.containsPatternWithId(pattern.id)).toEqual(true);
+        handle.deletePattern(pattern.id);
+        expect(handle.containsPatternWithId(pattern.id)).toEqual(false);
+      });
+    });
   });
 
   describe("HapticaExtensionSettings tests", () => {

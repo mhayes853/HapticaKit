@@ -337,6 +337,13 @@ export interface HapticaPatternsHandle {
    * @param id The id of the pattern to delete.
    */
   deletePattern(id: HapticaPatternID): void;
+
+  /**
+   * Returns true if a pattern with the specified id is stored.
+   *
+   * @param id The id of the pattern.
+   */
+  containsPatternWithId(id: HapticaPatternID): boolean;
 }
 
 /**
