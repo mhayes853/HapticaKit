@@ -346,6 +346,35 @@ export interface HapticaPatternsHandle {
   containsPatternWithId(id: HapticaPatternID): boolean;
 }
 
+class _PatternHandle implements HapticaPatternsHandle {
+  constructor(private readonly primitiveHandle: HapticaPatternsHandle) {}
+
+  fetchPatterns(
+    predicate?: (pattern: HapticaPattern) => boolean,
+  ): HapticaPattern[] {
+    return this.primitiveHandle.fetchPatterns(predicate);
+  }
+
+  create(pattern: HapticaPatternCreate): HapticaPattern {
+    return this.primitiveHandle.create(pattern);
+  }
+
+  update(pattern: HapticaPatternUpdate): HapticaPattern {
+    if (!this.containsPatternWithId(pattern.id)) {
+      throw HapticaExtensionError.patternWithIdNotFound(pattern.id);
+    }
+    return this.primitiveHandle.update(pattern);
+  }
+
+  deletePattern(id: HapticaPatternID): void {
+    return this.primitiveHandle.deletePattern(id);
+  }
+
+  containsPatternWithId(id: HapticaPatternID): boolean {
+    return this.primitiveHandle.containsPatternWithId(id);
+  }
+}
+
 /**
  * A class for your extension's haptic pattern storage.
  *
@@ -365,7 +394,9 @@ export class HapticaPatterns {
    * @returns Whatever `fn` returns.
    */
   async withTransaction<T>(fn: (handle: HapticaPatternsHandle) => T) {
-    return await _hapticaPrimitives.patternsWithTransaction(fn);
+    return await _hapticaPrimitives.patternsWithTransaction((nativeHandle) => {
+      return fn(new _PatternHandle(nativeHandle));
+    });
   }
 }
 

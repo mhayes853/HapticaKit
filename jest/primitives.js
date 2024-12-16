@@ -1,6 +1,5 @@
 const crypto = require("crypto");
 const uuid = require("uuid");
-const { HapticaExtensionError } = require("../index");
 
 const DEFAULT_PATTERN = {
   name: "",
@@ -39,7 +38,7 @@ class MockPatternsHandle {
       (p) => p.id === patternUpdate.id,
     );
     if (patternIndex === -1) {
-      throw HapticaExtensionError.patternWithIdNotFound(patternUpdate.id);
+      return undefined; // NB: _PatternHandle handles the case where the pattern is not found.
     }
     this.patterns[patternIndex] = {
       ...this.patterns[patternIndex],
