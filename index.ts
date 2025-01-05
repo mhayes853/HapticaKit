@@ -478,20 +478,55 @@ export class HapticaPatterns {
  */
 const patterns = new HapticaPatterns(Symbol._hapticaPrivate);
 
+/**
+ * A class for managing the extension's stored audio files.
+ */
 export class HapticaAudioFilesDirectory {
   constructor(key: Symbol) {
     _hapticaInternalConstructorCheck(key);
   }
 
+  /**
+   * Loads all {@link HapticaAudioFile}s that this extension owns.
+   */
   files(): HapticaAudioFile[] {
     return _hapticaPrimitives.audioDirectoryFiles();
   }
 
+  /**
+   * Loads all {@link HapticaAudioFile}s specified as waveform paths in `pattern`.
+   *
+   * @param pattern An {@link AHAPPattern}.
+   * @returns All {@link HapticaAudioFile}s associated with `pattern`.
+   */
   filesForPattern(pattern: AHAPPattern): HapticaAudioFile[] {
     return _hapticaPrimitives.audioDirectoryFilesForPattern(pattern);
   }
 }
 
+/**
+ * The directory of audio files for your extension.
+ *
+ * The directory allows you to query {@link HapticaAudioFile}s that your extension owns. You cannot
+ * load audio files created by other extensions.
+ *
+ * Your extension can create, and save audio files in the directory like so:
+ * ```ts
+ * const file = new HapticaAudioFile("sound.caf", soundBytes)
+ * file.save()
+ *
+ * const files = audioDirectory.files() // Contains the saved file
+ * ```
+ *
+ * Files can be deleted from the directory by calling `delete` on {@link HapticaAudioFile}.
+ * ```ts
+ * const file = new HapticaAudioFile("sound.caf", soundBytes)
+ * file.save()
+ * file.delete()
+ *
+ * const files = audioDirectory.files() // Empty Array
+ * ```
+ */
 const audioFilesDirectory = new HapticaAudioFilesDirectory(
   Symbol._hapticaPrivate,
 );
