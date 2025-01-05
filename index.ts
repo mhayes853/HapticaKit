@@ -56,8 +56,19 @@ export class HapticaExtensionError extends Error {
     );
   }
 
+  /**
+   * Thrown when attempting to operate on an {@link HapticaPattern} with an ID that does not exist.
+   */
   static patternWithIdNotFound(id: HapticaPatternID) {
     return new HapticaExtensionError(`Pattern with id '${id}' was not found.`);
+  }
+
+  /**
+   * Thrown when attempting to delete an {@link HapticaAudioFile} that does not exist in the
+   * file system
+   */
+  static audioFileNotFound(name: string) {
+    return new HapticaExtensionError(`Audio file named ${name} was not found.`);
   }
 }
 
@@ -271,6 +282,16 @@ export interface HapticaAudioFile {
    * Synchronously loads the bytes of this file.
    */
   bytes(): Uint8Array;
+
+  /**
+   * Saves this audio file.
+   */
+  save(): void;
+
+  /**
+   * Deletes this audio file.
+   */
+  delete(): void;
 }
 
 declare global {
@@ -320,7 +341,7 @@ export type HapticaPattern = {
  */
 export type HapticaPatternCreate = Omit<
   HapticaPattern,
-  "id" | "createdAt" | "lastEditedAt"
+  "id" | "createdAt" | "lastEditedAt" | "audioFiles"
 >;
 
 /**
@@ -375,7 +396,7 @@ export interface HapticaPatternsHandle {
   containsPatternWithId(id: HapticaPatternID): boolean;
 }
 
-class _PatternHandle implements HapticaPatternsHandle {
+class _HapticaPatternsHandle implements HapticaPatternsHandle {
   constructor(private readonly primitiveHandle: HapticaPatternsHandle) {}
 
   fetchPatterns(
@@ -424,7 +445,7 @@ export class HapticaPatterns {
    */
   async withTransaction<T>(fn: (handle: HapticaPatternsHandle) => T) {
     return await _hapticaPrimitives.patternsWithTransaction((nativeHandle) => {
-      return fn(new _PatternHandle(nativeHandle));
+      return fn(new _HapticaPatternsHandle(nativeHandle));
     });
   }
 }
@@ -456,6 +477,24 @@ export class HapticaPatterns {
  * ```
  */
 const patterns = new HapticaPatterns(Symbol._hapticaPrivate);
+
+export class HapticaAudioFilesDirectory {
+  constructor(key: Symbol) {
+    _hapticaInternalConstructorCheck(key);
+  }
+
+  files(): HapticaAudioFile[] {
+    return _hapticaPrimitives.audioDirectoryFiles();
+  }
+
+  filesForPattern(pattern: AHAPPattern): HapticaAudioFile[] {
+    return _hapticaPrimitives.audioDirectoryFilesForPattern(pattern);
+  }
+}
+
+const audioFilesDirectory = new HapticaAudioFilesDirectory(
+  Symbol._hapticaPrivate,
+);
 
 /**
  * A class for retrieving device info.
@@ -938,6 +977,7 @@ export {
   keyValueStorage,
   secureStorage,
   extension,
+  audioFilesDirectory,
   AHAP_AUDIO_PARAMETER_IDS,
   AHAP_HAPTIC_PARAMETER_IDS,
   AHAP_DYNAMIC_PARAMETER_IDS,

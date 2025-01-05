@@ -130,7 +130,6 @@ describe("HapticaKit tests", () => {
         const pattern = handle.create({
           name: "Test",
           ahapPattern: TEST_AHAP_PATTERN,
-          audioFiles: [],
         });
         const patterns = handle.fetchPatterns();
         expect(patterns).toEqual([pattern]);
@@ -142,13 +141,11 @@ describe("HapticaKit tests", () => {
         const pattern = handle.create({
           name: "Test",
           ahapPattern: TEST_AHAP_PATTERN,
-          audioFiles: [],
         });
         handle.update({
           id: pattern.id,
           name: "Blob",
           ahapPattern: TEST_AHAP_PATTERN,
-          audioFiles: [],
         });
         const patterns = handle.fetchPatterns();
         expect(patterns).toEqual([
@@ -164,7 +161,6 @@ describe("HapticaKit tests", () => {
             id: "dkljldkjkldj",
             name: "Blob",
             ahapPattern: TEST_AHAP_PATTERN,
-            audioFiles: [],
           });
         }).toThrow(HapticaExtensionError.patternWithIdNotFound("dkljldkjkldj"));
       });
@@ -175,12 +171,10 @@ describe("HapticaKit tests", () => {
         handle.create({
           name: "Test",
           ahapPattern: TEST_AHAP_PATTERN,
-          audioFiles: [],
         });
         const expectedPattern = handle.create({
           name: "Blob",
           ahapPattern: TEST_AHAP_PATTERN,
-          audioFiles: [],
         });
         const patterns = handle.fetchPatterns((p) => p.name === "Blob");
         expect(patterns).toEqual([expectedPattern]);
@@ -192,12 +186,10 @@ describe("HapticaKit tests", () => {
         const { id } = handle.create({
           name: "Test",
           ahapPattern: TEST_AHAP_PATTERN,
-          audioFiles: [],
         });
         const pattern2 = handle.create({
           name: "Blob",
           ahapPattern: TEST_AHAP_PATTERN,
-          audioFiles: [],
         });
         handle.deletePattern(id);
         const patterns = handle.fetchPatterns();
@@ -205,19 +197,71 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should be able to save and load", async () => {
+    it("should load audio associated with the pattern", async () => {
+      const file = new HapticaAudioFile(
+        "coins.caf",
+        new Uint8Array([0x01, 0x02]),
+      );
+      const file2 = new HapticaAudioFile(
+        "test.caf",
+        new Uint8Array([0x03, 0x04]),
+      );
+      file.save();
+      file2.save();
       await patterns.withTransaction((handle) => {
-        const file = new HapticaAudioFile("foo.mp3", new Uint8Array([0, 1]));
-        handle.create({
-          name: "Test",
+        const pattern = handle.create({
+          name: "Blob",
           ahapPattern: TEST_AHAP_PATTERN,
-          audioFiles: [file],
         });
         const patterns = handle.fetchPatterns();
-        expect(patterns[0].audioFiles[0].bytes()).toEqual(
-          new Uint8Array([0, 1]),
-        );
+        expect(pattern.audioFiles).toEqual([file]);
+        expect(patterns).toEqual([pattern]);
       });
+    });
+
+    it("should load audio associated with the pattern after it has been saved", async () => {
+      const file = new HapticaAudioFile(
+        "coins.caf",
+        new Uint8Array([0x01, 0x02]),
+      );
+      await patterns.withTransaction((handle) => {
+        const pattern = handle.create({
+          name: "Blob",
+          ahapPattern: TEST_AHAP_PATTERN,
+        });
+        file.save();
+        const patterns = handle.fetchPatterns();
+        expect(pattern.audioFiles).toEqual([]);
+        expect(patterns[0].audioFiles).toEqual([file]);
+      });
+    });
+
+    it("should not load audio associated with the pattern when it has been deleted", async () => {
+      const file = new HapticaAudioFile(
+        "coins.caf",
+        new Uint8Array([0x01, 0x02]),
+      );
+      file.save();
+      file.delete();
+      await patterns.withTransaction((handle) => {
+        const pattern = handle.create({
+          name: "Blob",
+          ahapPattern: TEST_AHAP_PATTERN,
+        });
+        const patterns = handle.fetchPatterns();
+        expect(pattern.audioFiles).toEqual([]);
+        expect(patterns).toEqual([pattern]);
+      });
+    });
+
+    it("should throw an error when trying to delete an unsaved audio file", () => {
+      const file = new HapticaAudioFile(
+        "coins.caf",
+        new Uint8Array([0x01, 0x02]),
+      );
+      expect(() => file.delete()).toThrow(
+        HapticaExtensionError.audioFileNotFound(file.filename),
+      );
     });
 
     it("should be able to detect when a pattern is stored", async () => {
@@ -226,7 +270,6 @@ describe("HapticaKit tests", () => {
         const pattern = handle.create({
           name: "Test",
           ahapPattern: TEST_AHAP_PATTERN,
-          audioFiles: [],
         });
         expect(handle.containsPatternWithId(pattern.id)).toEqual(true);
         handle.deletePattern(pattern.id);

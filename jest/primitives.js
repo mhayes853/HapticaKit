@@ -1,61 +1,5 @@
-const crypto = require("crypto");
 const uuid = require("uuid");
-
-const DEFAULT_PATTERN = {
-  name: "",
-  ahapPattern: { Version: 1, Pattern: [] },
-  audioFiles: [],
-};
-
-class MockPatternsHandle {
-  patterns;
-
-  constructor(patterns) {
-    this.patterns = structuredClone(patterns);
-  }
-
-  fetchPatterns(predicate) {
-    return this.patterns.filter((p) => {
-      return typeof predicate === "function" ? predicate(p) : true;
-    });
-  }
-
-  create(patternCreate) {
-    const now = new Date();
-    const pattern = {
-      ...DEFAULT_PATTERN,
-      ...patternCreate,
-      id: uuid.v7(),
-      createdAt: now,
-      lastEditedAt: now,
-    };
-    this.patterns.push(pattern);
-    return pattern;
-  }
-
-  update(patternUpdate) {
-    const patternIndex = this.patterns.findIndex(
-      (p) => p.id === patternUpdate.id,
-    );
-    if (patternIndex === -1) {
-      return undefined; // NB: _PatternHandle handles the case where the pattern is not found.
-    }
-    this.patterns[patternIndex] = {
-      ...this.patterns[patternIndex],
-      ...patternUpdate,
-      lastEditedAt: new Date(),
-    };
-    return this.patterns[patternIndex];
-  }
-
-  deletePattern(id) {
-    this.patterns = this.patterns.filter((p) => p.id !== id);
-  }
-
-  containsPatternWithId(id) {
-    return this.patterns.findIndex((p) => p.id === id) !== -1;
-  }
-}
+const { HapticaExtensionError } = require("../index");
 
 class MockHapticaPrimitives {
   #extensionId = uuid.v7();
@@ -63,6 +7,7 @@ class MockHapticaPrimitives {
   #keyValueStorage = new Map();
   #secureStorage = new Map();
   #patterns = [];
+  #audioDirectory = new Map();
 
   extensionID() {
     return this.#extensionId;
@@ -128,10 +73,108 @@ class MockHapticaPrimitives {
     this.#keyValueStorage = new Map();
     this.#secureStorage = new Map();
     this.#patterns = [];
+    this.#audioDirectory = new Map();
   }
 
   registerManifest(manifest) {}
   unregisterManifest() {}
+
+  audioDirectoryFiles() {
+    return Array.from(this.#audioDirectory.values());
+  }
+
+  _saveAudioFile(file) {
+    this.#audioDirectory.set(file.filename, file);
+  }
+
+  _deleteAudioFile(file) {
+    if (!this.#audioDirectory.has(file.filename)) {
+      throw HapticaExtensionError.audioFileNotFound(file.filename);
+    }
+    this.#audioDirectory.delete(file.filename);
+  }
+
+  audioDirectoryFilesForPattern(pattern) {
+    const paths = new Set(waveformPaths(pattern));
+    return this.audioDirectoryFiles().filter((f) => paths.has(f.filename));
+  }
+}
+
+const waveformPaths = (pattern) => {
+  return pattern.Pattern.map((e) => {
+    if (!("Event" in e)) return undefined;
+    if (e.Event.EventType !== "AudioCustom") return undefined;
+    return e.Event.EventWaveformPath;
+  }).filter((p) => !!p);
+};
+
+const primitives = new MockHapticaPrimitives();
+
+const DEFAULT_PATTERN = {
+  name: "",
+  ahapPattern: { Version: 1, Pattern: [] },
+};
+
+class MockPatternsHandle {
+  patterns;
+
+  constructor(patterns) {
+    this.patterns = structuredClone(patterns);
+  }
+
+  fetchPatterns(predicate) {
+    return this.patterns
+      .filter((p) => {
+        return typeof predicate === "function" ? predicate(p) : true;
+      })
+      .map((p) => ({
+        ...p,
+        audioFiles: primitives.audioDirectoryFilesForPattern(p.ahapPattern),
+      }));
+  }
+
+  create(patternCreate) {
+    const now = new Date();
+    const pattern = {
+      ...DEFAULT_PATTERN,
+      ...patternCreate,
+      id: uuid.v7(),
+      createdAt: now,
+      lastEditedAt: now,
+    };
+    this.patterns.push(pattern);
+    return {
+      ...pattern,
+      audioFiles: primitives.audioDirectoryFilesForPattern(pattern.ahapPattern),
+    };
+  }
+
+  update(patternUpdate) {
+    const patternIndex = this.patterns.findIndex(
+      (p) => p.id === patternUpdate.id,
+    );
+    if (patternIndex === -1) {
+      return undefined; // NB: _PatternHandle handles the case where the pattern is not found.
+    }
+    this.patterns[patternIndex] = {
+      ...this.patterns[patternIndex],
+      ...patternUpdate,
+      lastEditedAt: new Date(),
+    };
+    const pattern = this.patterns[patternIndex];
+    return {
+      ...pattern,
+      audioFiles: primitives.audioDirectoryFilesForPattern(pattern.ahapPattern),
+    };
+  }
+
+  deletePattern(id) {
+    this.patterns = this.patterns.filter((p) => p.id !== id);
+  }
+
+  containsPatternWithId(id) {
+    return this.patterns.findIndex((p) => p.id === id) !== -1;
+  }
 }
 
 class MockAudioFile {
@@ -146,9 +189,17 @@ class MockAudioFile {
   bytes() {
     return this.#bytes;
   }
+
+  save() {
+    primitives._saveAudioFile(this);
+  }
+
+  delete() {
+    primitives._deleteAudioFile(this);
+  }
 }
 
-global._hapticaPrimitives = new MockHapticaPrimitives();
+global._hapticaPrimitives = primitives;
 global.HapticaAudioFile = MockAudioFile;
 
 beforeEach(() => global._hapticaPrimitives.reset());
