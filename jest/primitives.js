@@ -1,7 +1,8 @@
 const uuid = require("uuid");
 
+const EXTENSION_ID = uuid.v7();
+
 class MockHapticaPrimitives {
-  #extensionId = uuid.v7();
   #settings = new Map();
   #keyValueStorage = new Map();
   #secureStorage = new Map();
@@ -9,7 +10,7 @@ class MockHapticaPrimitives {
   #audioDirectory = new Map();
 
   extensionID() {
-    return this.#extensionId;
+    return EXTENSION_ID;
   }
 
   settingsValue(key) {
@@ -179,6 +180,10 @@ class MockPatternsHandle {
 class MockAudioFile {
   filename;
   #bytes;
+
+  get writeScope() {
+    return { type: "extension", id: EXTENSION_ID };
+  }
 
   constructor(filename, bytes) {
     this.filename = filename;

@@ -347,6 +347,10 @@ export interface HapticaAudioFileConstructor {
   new (filename: string, data: Uint8Array): HapticaAudioFile;
 }
 
+export type HapticaAudioFileScope =
+  | { type: "main" }
+  | { type: "extension"; id: HapticaExtensionID };
+
 export interface HapticaAudioFile {
   /**
    * The filename of this file.
@@ -354,12 +358,17 @@ export interface HapticaAudioFile {
   get filename(): string;
 
   /**
-   * The extension that owns the audio file.
+   * The write scope of this audio file.
    *
-   * If this id is not equal to the current extension id, then calling `save` or `delete` will
-   * a throw a permissions error.
+   * If the scope type is `"main"`, then this file is owned by the main application.
+   * If the scope type is `"extension"`, then this file is owned by an extension.
+   *
+   * The scope type must be `"extension"` and the corresponding `id` field must be equal to this
+   * extension's ID if you want to call `save` or `delete`. Files that are not scoped to this
+   * extension are read-only, and cannot be saved or deleted. Calling `save` or `delete` on an
+   * out-of-scope file will result in an error being thrown.
    */
-  get extensionId(): HapticaExtensionID | null;
+  get writeScope(): HapticaAudioFileScope;
 
   /**
    * Synchronously loads the bytes of this file.
