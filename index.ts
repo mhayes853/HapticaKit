@@ -12,65 +12,140 @@ function _hapticaInternalConstructorCheck(key: Symbol) {
   }
 }
 
-/**
- * An Error subclass thrown by APIs that serve haptica extensions.
- */
-export class HapticaExtensionError extends Error {
-  private constructor(message: string) {
-    super(message);
-  }
+export type HapticaExtensionErrorCode =
+  | "ManifestAlreadyRegistered"
+  | "ManifestNotRegistered"
+  | "SettingNameNotFound"
+  | "InvalidSettingNameType"
+  | "PatternWithIdNotFound"
+  | "AudioFileNotFound"
+  | "AudioFileInvalidPermissions";
+
+export interface HapticaExtensionErrorConstructor {
+  new (code: HapticaExtensionErrorCode, message: string): HapticaExtensionError;
 
   /**
    * Thrown when registering a manifest more than once.
    */
-  static MANIFEST_ALREADY_REGISTERED = new HapticaExtensionError(
-    "A manifest has already been registered. You cannot register a manifest more than once. If you wish to reset the extension, call `extension.reset`.",
-  );
+  MANIFEST_ALREADY_REGISTERED: HapticaExtensionError;
 
   /**
    * Thrown when the manifest has not been registered.
    */
-  static MANIFEST_NOT_REGISTERED = new HapticaExtensionError(
-    "The manifest has not been registered.",
-  );
+  MANIFEST_NOT_REGISTERED: HapticaExtensionError;
 
   /**
    * Thrown when attempting to set a value for a non-existent setting name.
    */
-  static settingNameNotFound(name: string, validNames: string[]) {
-    return new HapticaExtensionError(
-      `'${name}' is not a valid setting name. Valid names are ${validNames.join(", ")}.`,
-    );
-  }
+  settingNameNotFound(
+    name: string,
+    validNames: string[],
+  ): HapticaExtensionError;
 
   /**
    * Thrown when attempting to set a wrongly typed value for a setting name.
    */
-  static invalidSettingNameType(
+  invalidSettingNameType(
     name: string,
     type: string,
     expectedType: string,
-  ) {
-    return new HapticaExtensionError(
-      `'${type}' is not a valid type for setting '${name}'. Expected '${expectedType}'.`,
-    );
-  }
+  ): HapticaExtensionError;
 
   /**
    * Thrown when attempting to operate on an {@link HapticaPattern} with an ID that does not exist.
    */
-  static patternWithIdNotFound(id: HapticaPatternID) {
-    return new HapticaExtensionError(`Pattern with id '${id}' was not found.`);
-  }
+  patternWithIdNotFound(id: HapticaPatternID): HapticaExtensionError;
 
   /**
    * Thrown when attempting to delete an {@link HapticaAudioFile} that does not exist in the
    * file system
    */
-  static audioFileNotFound(name: string) {
-    return new HapticaExtensionError(`Audio file named ${name} was not found.`);
-  }
+  audioFileNotFound(name: string): HapticaExtensionError;
+
+  /**
+   * Thrown when attempting to modify or delete an {@link HapticaAudioFile} that this extension is
+   * not permitted to modify.
+   */
+  audioFileInvalidPermissions(
+    name: string,
+    extensionId: HapticaExtensionID | null,
+  ): HapticaExtensionError;
 }
+
+/**
+ * An Error subclass thrown by APIs that serve haptica extensions.
+ */
+export interface HapticaExtensionError extends Error {
+  /**
+   * The error code associated with this error.
+   */
+  get code(): HapticaExtensionErrorCode;
+}
+
+declare global {
+  /**
+   * An Error subclass thrown by APIs that serve haptica extensions.
+   */
+  var HapticaExtensionError: HapticaExtensionErrorConstructor;
+}
+
+HapticaExtensionError.MANIFEST_ALREADY_REGISTERED = new HapticaExtensionError(
+  "ManifestAlreadyRegistered",
+  "A manifest has already been registered. You cannot register a manifest more than once. If you wish to reset the extension, call `extension.reset`.",
+);
+
+HapticaExtensionError.MANIFEST_NOT_REGISTERED = new HapticaExtensionError(
+  "ManifestNotRegistered",
+  "The manifest has not been registered.",
+);
+
+HapticaExtensionError.settingNameNotFound = function (name, validNames) {
+  return new HapticaExtensionError(
+    "SettingNameNotFound",
+    `'${name}' is not a valid setting name. Valid names are ${validNames.join(", ")}.`,
+  );
+};
+
+HapticaExtensionError.invalidSettingNameType = function (
+  name,
+  type,
+  expectedType,
+) {
+  return new HapticaExtensionError(
+    "InvalidSettingNameType",
+    `'${type}' is not a valid type for setting '${name}'. Expected '${expectedType}'.`,
+  );
+};
+
+HapticaExtensionError.patternWithIdNotFound = function (id) {
+  return new HapticaExtensionError(
+    "PatternWithIdNotFound",
+    `Pattern with id '${id}' was not found.`,
+  );
+};
+
+HapticaExtensionError.audioFileNotFound = function (name) {
+  return new HapticaExtensionError(
+    "AudioFileNotFound",
+    `Audio file named ${name} was not found.`,
+  );
+};
+
+HapticaExtensionError.audioFileInvalidPermissions = function (
+  name,
+  extensionId,
+) {
+  if (!extensionId) {
+    return new HapticaExtensionError(
+      "AudioFileInvalidPermissions",
+      `Cannot save or delete ${name} from this extension. ${name} is owned by the main application; your extension only has read-only access to the file.`,
+    );
+  }
+  return new HapticaExtensionError(
+    "AudioFileInvalidPermissions",
+    `Cannot save or delete ${name} from this extension. ${name} is owned by another extension with id ${extensionId}; your extension only has read-only access to the file.`,
+  );
+};
 
 /**
  * Parameter ids that can be used for haptic events.
@@ -279,17 +354,31 @@ export interface HapticaAudioFile {
   get filename(): string;
 
   /**
+   * The extension that owns the audio file.
+   *
+   * If this id is not equal to the current extension id, then calling `save` or `delete` will
+   * a throw a permissions error.
+   */
+  get extensionId(): HapticaExtensionID | null;
+
+  /**
    * Synchronously loads the bytes of this file.
    */
   bytes(): Uint8Array;
 
   /**
    * Saves this audio file.
+   *
+   * If this audio file does not belong to this extension, then this method will throw a
+   * permissions error.
    */
   save(): void;
 
   /**
    * Deletes this audio file.
+   *
+   * If this audio file does not belong to this extension, then this method will throw a
+   * permissions error.
    */
   delete(): void;
 }
@@ -899,15 +988,6 @@ export type HapticaExtensionManifest = {
    * You can use this callback to perform any cleanup work that your extension needs on deletion.
    */
   onExtensionDeleted?: () => Promise<void>;
-
-  /**
-   * A callback that runs whenever the user creates a new haptic pattern.
-   *
-   * @param pattern The name and id of the newly created pattern.
-   */
-  onPatternCreated?: (
-    pattern: Pick<HapticaPattern, "id" | "name">,
-  ) => Promise<void>;
 
   /**
    * A callback the runs when the user shares a haptic pattern with your extension.

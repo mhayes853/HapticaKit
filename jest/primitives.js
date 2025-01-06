@@ -1,5 +1,4 @@
 const uuid = require("uuid");
-const { HapticaExtensionError } = require("../index");
 
 class MockHapticaPrimitives {
   #extensionId = uuid.v7();
