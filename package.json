@@ -1,6 +1,6 @@
 {
   "name": "haptica-kit",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A package for writing extensions for the haptica app.",
   "main": "./dist/index.js",
   "scripts": {
