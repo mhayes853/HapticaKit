@@ -285,8 +285,8 @@ describe("HapticaKit tests", () => {
       extension.registerManifest({
         name: "Test",
         settingsSchemas: [
-          { type: "toggle", name: "test", defaultValue: true },
-          { type: "text-field", name: "blob", defaultValue: "hello world" },
+          { type: "toggle", key: "test", defaultValue: true },
+          { type: "text-field", key: "blob", defaultValue: "hello world" },
         ],
       });
       settings = extension.settings;

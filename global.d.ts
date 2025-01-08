@@ -12,13 +12,14 @@ import {
 declare global {
   interface _HapticaPrimitives {
     extensionID(): HapticaExtensionID;
-    settingsValue(key: string): HapticaExtensionSettingsValue | undefined;
+    settingsValue(
+      schema: HapticaExtensionSettingsSchema,
+    ): HapticaExtensionSettingsValue | undefined;
     setSettingsValue(
-      key: string,
+      schema: HapticaExtensionSettingsSchema,
       value: HapticaExtensionSettingsValue,
-      type: HapticaExtensionSettingsSchema["type"],
     ): void;
-    settingsResetValues(keys: string[]): void;
+    settingsResetValues(schemas: HapticaExtensionSettingsSchema[]): void;
     deviceName(): string;
     deviceOSVersion(): string;
     deviceHardwareHapticsCompatability(): DeviceHapticsHardwareCompatability;
@@ -28,7 +29,9 @@ declare global {
     secureStorageValue(key: string): string | undefined;
     secureStorageSetValue(key: string, value: string): void;
     secureStorageRemoveValue(key: string): void;
-    patternsWithTransaction<T>(fn: (handle: HapticaPatternsHandle) => T): T;
+    patternsWithTransaction<T>(
+      fn: (handle: HapticaPatternsHandle) => T,
+    ): Promise<T>;
     registerManifest(manifest: HapticaExtensionManifest): void;
     unregisterManifest(): void;
     audioDirectoryFiles(): HapticaAudioFile[];

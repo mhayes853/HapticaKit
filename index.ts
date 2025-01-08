@@ -19,7 +19,7 @@ export type HapticaExtensionErrorCode =
   | "InvalidSettingNameType"
   | "PatternWithIdNotFound"
   | "AudioFileNotFound"
-  | "AudioFileInvalidPermissions";
+  | "InvalidResourcePermissions";
 
 export interface HapticaExtensionErrorConstructor {
   new (code: HapticaExtensionErrorCode, message: string): HapticaExtensionError;
@@ -68,7 +68,16 @@ export interface HapticaExtensionErrorConstructor {
    */
   audioFileInvalidPermissions(
     name: string,
-    extensionId: HapticaExtensionID | null,
+    owner: HapticaResourceOwner,
+  ): HapticaExtensionError;
+
+  /**
+   * Thrown when attempting to modify or delete an {@link HapticaPattern} that this extension is
+   * not permitted to modify.
+   */
+  hapticPatternInvalidPermissions(
+    name: string,
+    owner: HapticaResourceOwner,
   ): HapticaExtensionError;
 }
 
@@ -131,19 +140,29 @@ HapticaExtensionError.audioFileNotFound = function (name) {
   );
 };
 
-HapticaExtensionError.audioFileInvalidPermissions = function (
-  name,
-  extensionId,
-) {
-  if (!extensionId) {
+HapticaExtensionError.audioFileInvalidPermissions = function (name, owner) {
+  if (owner.type === "main-application") {
     return new HapticaExtensionError(
-      "AudioFileInvalidPermissions",
+      "InvalidResourcePermissions",
       `Cannot save or delete ${name} from this extension. ${name} is owned by the main application; your extension only has read-only access to the file.`,
     );
   }
   return new HapticaExtensionError(
-    "AudioFileInvalidPermissions",
-    `Cannot save or delete ${name} from this extension. ${name} is owned by another extension with id ${extensionId}; your extension only has read-only access to the file.`,
+    "InvalidResourcePermissions",
+    `Cannot save or delete ${name} from this extension. ${name} is owned by another extension with id ${owner.id}; your extension only has read-only access to the file.`,
+  );
+};
+
+HapticaExtensionError.hapticPatternInvalidPermissions = function (name, owner) {
+  if (owner.type === "main-application") {
+    return new HapticaExtensionError(
+      "InvalidResourcePermissions",
+      `Cannot update or delete ${name} from this extension. ${name} is owned by the main application; your extension only has read-only access to the pattern.`,
+    );
+  }
+  return new HapticaExtensionError(
+    "InvalidResourcePermissions",
+    `Cannot update or delete ${name} from this extension. ${name} is owned by another extension with id ${owner.id}; your extension only has read-only access to the pattern.`,
   );
 };
 
@@ -347,9 +366,27 @@ export interface HapticaAudioFileConstructor {
   new (filename: string, data: Uint8Array): HapticaAudioFile;
 }
 
-export type HapticaAudioFileOwner =
-  | { type: "main" }
-  | { type: "extension"; id: HapticaExtensionID };
+/**
+ * An owner of a resource managed by the app.
+ */
+export type HapticaResourceOwner =
+  | {
+      /**
+       * The resource is owned by the main application.
+       */
+      type: "main-application";
+    }
+  | {
+      /**
+       * The resource is owned by an extension.
+       */
+      type: "extension";
+
+      /**
+       * The id of the extension that owns the resource.
+       */
+      id: HapticaExtensionID;
+    };
 
 export interface HapticaAudioFile {
   /**
@@ -368,7 +405,7 @@ export interface HapticaAudioFile {
    * extension are read-only, and cannot be saved or deleted. Calling `save` or `delete` on a file
    * this this extension does not own will result in a permissions error being thrown.
    */
-  get owner(): HapticaAudioFileOwner;
+  get owner(): HapticaResourceOwner;
 
   /**
    * Synchronously loads the bytes of this file.
@@ -432,15 +469,17 @@ export type HapticaPattern = {
    * The time that the pattern was last edited by the user.
    */
   lastEditedAt: Date;
+
+  /**
+   * The owner of the pattern.
+   */
+  owner: HapticaResourceOwner;
 };
 
 /**
  * Properties for creating an {@link HapticaPattern}.
  */
-export type HapticaPatternCreate = Omit<
-  HapticaPattern,
-  "id" | "createdAt" | "lastEditedAt" | "audioFiles"
->;
+export type HapticaPatternCreate = Pick<HapticaPattern, "name" | "ahapPattern">;
 
 /**
  * Properties for saving an {@link HapticaPattern}.
@@ -450,7 +489,8 @@ export type HapticaPatternUpdate = Partial<HapticaPatternCreate> & {
 };
 
 /**
- * An interface for fetching, editing, and deleting haptic patterns owned by your extension.
+ * An interface for fetching, editing, and deleting haptic patterns the have been shared with
+ * your extension.
  *
  * You get an instance of this interface by calling `withTransaction` on {@link HapticaPatterns}.
  */
@@ -475,12 +515,16 @@ export interface HapticaPatternsHandle {
   /**
    * Saves and returns the updated {@link HapticaPattern}.
    *
+   * Your extension must be the owner of the pattern, otherwise a permissions error will be thrown.
+   *
    * @param pattern An {@link HapticaPatternUpdate}.
    */
   update(pattern: HapticaPatternUpdate): HapticaPattern;
 
   /**
    * Deletes the pattern with the specified id.
+   *
+   * Your extension must be the owner of the pattern, otherwise a permissions error will be thrown.
    *
    * @param id The id of the pattern to delete.
    */
@@ -605,8 +649,8 @@ export class HapticaAudioFilesDirectory {
 /**
  * The directory of audio files for your extension.
  *
- * The directory allows you to query {@link HapticaAudioFile}s that your extension owns. You cannot
- * load audio files created by other extensions.
+ * The directory allows you to query {@link HapticaAudioFile}s that have been shared with or
+ * created by your extension.
  *
  * Your extension can create, and save audio files in the directory like so:
  * ```ts
@@ -775,11 +819,19 @@ export type HapticaExtensionSettingsValidationResult =
   | { status: "success" }
   | { status: "error"; message: string };
 
+/**
+ * A attribute for a setting value.
+ *
+ * Attributes affect how the app treats the setting value. For instance, the `"secure"` attribute
+ * will ensure that the setting value is persisted in secure storage (ie. Keychain).
+ */
+export type HapticaSettingAttribute = "secure";
+
 type BaseSettingsSchema<Value extends HapticaExtensionSettingsValue> = {
   /**
    * The unique name of the settings value.
    */
-  name: string;
+  key: string;
 
   /**
    * A display name for the settings value that gets displayed on the extension settings screen.
@@ -801,6 +853,11 @@ type BaseSettingsSchema<Value extends HapticaExtensionSettingsValue> = {
    * The default value for this setting.
    */
   defaultValue: Value;
+
+  /**
+   * The setting's attributes.
+   */
+  attributes?: HapticaSettingAttribute[];
 
   /**
    * A function to validate the settings value when the user decides to change it.
@@ -847,10 +904,10 @@ export class HapticaExtensionSettings {
    * @returns The value for the settings name.
    */
   value(settingName: string): HapticaExtensionSettingsValue {
-    this.checkSettingName(settingName);
-    const nativeValue = _hapticaPrimitives.settingsValue(settingName);
+    const schema = this.checkSettingName(settingName);
+    const nativeValue = _hapticaPrimitives.settingsValue(schema);
     if (nativeValue !== undefined) return nativeValue;
-    return this.schemas.find((s) => s.name === settingName)?.defaultValue;
+    return this.schemas.find((s) => s.key === settingName)?.defaultValue;
   }
 
   /**
@@ -862,7 +919,7 @@ export class HapticaExtensionSettings {
   setValue(settingName: string, value: HapticaExtensionSettingsValue) {
     const schema = this.checkSettingName(settingName);
     this.checkValueType(settingName, schema.type, value);
-    _hapticaPrimitives.setSettingsValue(settingName, value, schema.type);
+    _hapticaPrimitives.setSettingsValue(schema, value);
   }
 
   /**
@@ -871,7 +928,7 @@ export class HapticaExtensionSettings {
    * @param settingName A setting name.
    */
   has(settingName: string) {
-    return !!this.schemas.find((s) => s.name === settingName);
+    return !!this.schemas.find((s) => s.key === settingName);
   }
 
   /**
@@ -880,21 +937,21 @@ export class HapticaExtensionSettings {
    * @param Specific keys or keys to reset. By default, all keys are reset.
    */
   reset(keys?: string | string[]) {
-    const keysToReset =
+    const schemas =
       typeof keys === "undefined"
-        ? this.schemas.map((s) => s.name)
+        ? this.schemas
         : typeof keys === "string"
-          ? [keys]
-          : keys;
-    _hapticaPrimitives.settingsResetValues(keysToReset);
+          ? this.schemas.filter((s) => s.key === keys)
+          : this.schemas.filter((s) => keys.includes(s.key));
+    _hapticaPrimitives.settingsResetValues(schemas);
   }
 
   private checkSettingName(name: string) {
-    const schema = this.schemas.find((s) => s.name === name);
+    const schema = this.schemas.find((s) => s.key === name);
     if (schema) return schema;
     throw HapticaExtensionError.settingNameNotFound(
       name,
-      this.schemas.map((s) => s.name),
+      this.schemas.map((s) => s.key),
     );
   }
 
@@ -980,6 +1037,9 @@ export type HapticaExtensionManifest = {
   /**
    * A callback the runs whenever the user changes your extension's settings.
    *
+   * The updated settings will have already been applied to the settings storage when this callback
+   * is invoked.
+   *
    * @param changes A list of {@link HapticaExtensionSettingsChange}s.
    */
   onSettingsChanged?: (
@@ -1006,7 +1066,25 @@ export type HapticaExtensionManifest = {
   onPatternShared?: (pattern: HapticaPattern) => Promise<void>;
 
   /**
+   * A callback that runs whenever the user has updated a haptic pattern.
+   *
+   * The update will have already been applied to the persisted location of the pattern when this
+   * callback is invoked.
+   *
+   * The user must have previously shared the haptic pattern with your extension, or this extension
+   * must be the owner of the haptic pattern in order for this callback to be invoked.
+   *
+   * @param pattern
+   */
+  onPatternUpdated?: (pattern: HapticaPattern) => Promise<void>;
+
+  /**
    * A callback that runs whenever the user has deleted a haptic pattern.
+   *
+   * The pattern will have already been deleted from storage when this callback is invoked.
+   *
+   * The user must have previously shared the haptic pattern with your extension, or this extension
+   * must be the owner of the haptic pattern in order for this callback to be invoked.
    *
    * @param pattern An {@link HapticaPattern}.
    */

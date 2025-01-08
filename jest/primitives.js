@@ -13,16 +13,16 @@ class MockHapticaPrimitives {
     return EXTENSION_ID;
   }
 
-  settingsValue(key) {
-    return this.#settings.get(key);
+  settingsValue(schema) {
+    return this.#settings.get(schema.key);
   }
 
-  setSettingsValue(key, value) {
-    this.#settings.set(key, value);
+  setSettingsValue(schema, value) {
+    this.#settings.set(schema.key, value);
   }
 
-  settingsResetValues(keys) {
-    keys.forEach((k) => this.#settings.delete(k));
+  settingsResetValues(schemas) {
+    schemas.forEach((s) => this.#settings.delete(s.key));
   }
 
   deviceName() {
