@@ -68,6 +68,13 @@ class MockHapticaPrimitives {
     return value;
   }
 
+  registerManifest(manifest) {}
+  unregisterManifest() {}
+
+  audioDirectoryWithTransaction(fn) {
+    return fn(new MockAudioDirectoryTransaction(this.#audioDirectory));
+  }
+
   reset() {
     this.#settings = new Map();
     this.#keyValueStorage = new Map();
@@ -75,28 +82,41 @@ class MockHapticaPrimitives {
     this.#patterns = [];
     this.#audioDirectory = new Map();
   }
+}
 
-  registerManifest(manifest) {}
-  unregisterManifest() {}
+const primitives = new MockHapticaPrimitives();
 
-  audioDirectoryFiles() {
-    return Array.from(this.#audioDirectory.values());
+class MockAudioDirectoryTransaction {
+  #files;
+
+  constructor(files) {
+    this.#files = files;
   }
 
-  _saveAudioFile(file) {
-    this.#audioDirectory.set(file.filename, file);
+  savedFiles() {
+    return Array.from(this.#files.values()).sort(
+      (a, b) => b.lastEditedAt.getTime() - a.lastEditedAt.getTime(),
+    );
   }
 
-  _deleteAudioFile(file) {
-    if (!this.#audioDirectory.has(file.filename)) {
+  savedFilesForPattern(pattern) {
+    const paths = new Set(waveformPaths(pattern));
+    return this.savedFiles().filter((f) => paths.has(f.filename));
+  }
+
+  checkFile(file) {
+    if (!this.#files.has(file.filename)) {
       throw HapticaExtensionError.audioFileNotFound(file.filename);
     }
-    this.#audioDirectory.delete(file.filename);
   }
 
-  audioDirectoryFilesForPattern(pattern) {
-    const paths = new Set(waveformPaths(pattern));
-    return this.audioDirectoryFiles().filter((f) => paths.has(f.filename));
+  setFile(file) {
+    this.#files.set(file.filename, file);
+  }
+
+  deleteFile(file) {
+    this.checkFile(file);
+    this.#files.delete(file.filename);
   }
 }
 
@@ -108,7 +128,35 @@ const waveformPaths = (pattern) => {
   }).filter((p) => !!p);
 };
 
-const primitives = new MockHapticaPrimitives();
+class MockAudioFile {
+  filename;
+  #bytes;
+  lastEditedAt;
+
+  get writeScope() {
+    return { type: "extension", id: EXTENSION_ID };
+  }
+
+  constructor(filename) {
+    this.filename = filename;
+    this.lastEditedAt = new Date();
+  }
+
+  bytes(tx) {
+    tx.checkFile(this);
+    return this.#bytes;
+  }
+
+  save(data, tx) {
+    this.#bytes = data;
+    this.lastEditedAt = new Date();
+    tx.setFile(this);
+  }
+
+  delete(tx) {
+    tx.deleteFile(this);
+  }
+}
 
 const DEFAULT_PATTERN = {
   name: "",
@@ -174,32 +222,6 @@ class MockPatternsHandle {
 
   containsPatternWithId(id) {
     return this.patterns.findIndex((p) => p.id === id) !== -1;
-  }
-}
-
-class MockAudioFile {
-  filename;
-  #bytes;
-
-  get writeScope() {
-    return { type: "extension", id: EXTENSION_ID };
-  }
-
-  constructor(filename, bytes) {
-    this.filename = filename;
-    this.#bytes = bytes;
-  }
-
-  bytes() {
-    return this.#bytes;
-  }
-
-  save() {
-    primitives._saveAudioFile(this);
-  }
-
-  delete() {
-    primitives._deleteAudioFile(this);
   }
 }
 

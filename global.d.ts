@@ -7,6 +7,7 @@ import {
   HapticaExtensionSettingsSchema,
   HapticaAudioFile,
   AHAPPattern,
+  HapticaAudioFilesDirectoryTransaction,
 } from "./index";
 
 declare global {
@@ -34,8 +35,9 @@ declare global {
     ): Promise<T>;
     registerManifest(manifest: HapticaExtensionManifest): void;
     unregisterManifest(): void;
-    audioDirectoryFiles(): HapticaAudioFile[];
-    audioDirectoryFilesForPattern(pattern: AHAPPattern): HapticaAudioFile[];
+    audioDirectoryWithTransaction<T>(
+      fn: (transaction: HapticaAudioFilesDirectoryTransaction) => T,
+    ): T;
   }
 
   const _hapticaPrimitives: _HapticaPrimitives;

@@ -1,5 +1,6 @@
 import {
   AHAPPattern,
+  audioFilesDirectory,
   extension,
   HapticaExtensionError,
   HapticaExtensionSettings,
@@ -197,73 +198,6 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should load audio associated with the pattern", async () => {
-      const file = new HapticaAudioFile(
-        "coins.caf",
-        new Uint8Array([0x01, 0x02]),
-      );
-      const file2 = new HapticaAudioFile(
-        "test.caf",
-        new Uint8Array([0x03, 0x04]),
-      );
-      file.save();
-      file2.save();
-      await patterns.withTransaction((handle) => {
-        const pattern = handle.create({
-          name: "Blob",
-          ahapPattern: TEST_AHAP_PATTERN,
-        });
-        const patterns = handle.fetchPatterns();
-        expect(pattern.audioFiles).toEqual([file]);
-        expect(patterns).toEqual([pattern]);
-      });
-    });
-
-    it("should load audio associated with the pattern after it has been saved", async () => {
-      const file = new HapticaAudioFile(
-        "coins.caf",
-        new Uint8Array([0x01, 0x02]),
-      );
-      await patterns.withTransaction((handle) => {
-        const pattern = handle.create({
-          name: "Blob",
-          ahapPattern: TEST_AHAP_PATTERN,
-        });
-        file.save();
-        const patterns = handle.fetchPatterns();
-        expect(pattern.audioFiles).toEqual([]);
-        expect(patterns[0].audioFiles).toEqual([file]);
-      });
-    });
-
-    it("should not load audio associated with the pattern when it has been deleted", async () => {
-      const file = new HapticaAudioFile(
-        "coins.caf",
-        new Uint8Array([0x01, 0x02]),
-      );
-      file.save();
-      file.delete();
-      await patterns.withTransaction((handle) => {
-        const pattern = handle.create({
-          name: "Blob",
-          ahapPattern: TEST_AHAP_PATTERN,
-        });
-        const patterns = handle.fetchPatterns();
-        expect(pattern.audioFiles).toEqual([]);
-        expect(patterns).toEqual([pattern]);
-      });
-    });
-
-    it("should throw an error when trying to delete an unsaved audio file", () => {
-      const file = new HapticaAudioFile(
-        "coins.caf",
-        new Uint8Array([0x01, 0x02]),
-      );
-      expect(() => file.delete()).toThrow(
-        HapticaExtensionError.audioFileNotFound(file.filename),
-      );
-    });
-
     it("should be able to detect when a pattern is stored", async () => {
       await patterns.withTransaction((handle) => {
         expect(handle.containsPatternWithId("skljkldjkldj")).toEqual(false);
@@ -274,6 +208,92 @@ describe("HapticaKit tests", () => {
         expect(handle.containsPatternWithId(pattern.id)).toEqual(true);
         handle.deletePattern(pattern.id);
         expect(handle.containsPatternWithId(pattern.id)).toEqual(false);
+      });
+    });
+  });
+
+  describe("AudioFiles tests", () => {
+    it("should load audio associated with the pattern", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        const file2 = new HapticaAudioFile("test.caf");
+        file.save(new Uint8Array([0x01, 0x02]), tx);
+        file2.save(new Uint8Array([0x03, 0x04]), tx);
+        const files = tx.savedFilesForPattern(TEST_AHAP_PATTERN);
+        expect(files).toEqual([file]);
+      });
+    });
+
+    it("should be able to load all audio files based on edit time", async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date(0));
+      const file = audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        file.save(new Uint8Array([0x01, 0x02]), tx);
+        return file;
+      });
+      jest.setSystemTime(new Date(1000));
+      audioFilesDirectory.withTransaction((tx) => {
+        const file2 = new HapticaAudioFile("test.caf");
+        file2.save(new Uint8Array([0x03, 0x04]), tx);
+        const files = tx.savedFiles();
+        expect(files).toEqual([file2, file]);
+      });
+      jest.useRealTimers();
+    });
+
+    it("should load audio data", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        file.save(new Uint8Array([0x01, 0x02]), tx);
+        const files = tx.savedFilesForPattern(TEST_AHAP_PATTERN);
+        expect(files[0].bytes(tx)).toEqual(new Uint8Array([0x01, 0x02]));
+      });
+    });
+
+    it("should overwrite existing audio", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        file.save(new Uint8Array([0x01, 0x02]), tx);
+        file.save(new Uint8Array([0x03, 0x04]), tx);
+        const files = tx.savedFilesForPattern(TEST_AHAP_PATTERN);
+        expect(files[0].bytes(tx)).toEqual(new Uint8Array([0x03, 0x04]));
+      });
+    });
+
+    it("should not load unsaved audio files", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const __ = new HapticaAudioFile("coins.caf");
+        const _ = new HapticaAudioFile("test.caf");
+        expect(tx.savedFiles()).toEqual([]);
+      });
+    });
+
+    it("should not load audio associated with the pattern when it has been deleted", async () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        file.save(new Uint8Array([0x01, 0x02]), tx);
+        file.delete(tx);
+        const files = tx.savedFilesForPattern(TEST_AHAP_PATTERN);
+        expect(files).toEqual([]);
+      });
+    });
+
+    it("should throw an error when trying to delete an unsaved audio file", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        expect(() => file.delete(tx)).toThrow(
+          HapticaExtensionError.audioFileNotFound(file.filename),
+        );
+      });
+    });
+
+    it("should throw an error when trying to load bytes from an unsaved audio file", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        expect(() => file.bytes(tx)).toThrow(
+          HapticaExtensionError.audioFileNotFound(file.filename),
+        );
       });
     });
   });

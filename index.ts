@@ -361,9 +361,8 @@ export interface HapticaAudioFileConstructor {
    * Constructs an {@link HapticaAudioFile}.
    *
    * @param filename The name of the file.
-   * @param data The audio data.
    */
-  new (filename: string, data: Uint8Array): HapticaAudioFile;
+  new (filename: string): HapticaAudioFile;
 }
 
 /**
@@ -408,9 +407,9 @@ export interface HapticaAudioFile {
   get owner(): HapticaResourceOwner;
 
   /**
-   * Synchronously loads the bytes of this file.
+   * Loads the bytes of this file.
    */
-  bytes(): Uint8Array;
+  bytes(tx: HapticaAudioFilesDirectoryTransaction): Uint8Array;
 
   /**
    * Saves this audio file.
@@ -418,7 +417,7 @@ export interface HapticaAudioFile {
    * If this audio file does not belong to this extension, then this method will throw a
    * permissions error.
    */
-  save(): void;
+  save(data: Uint8Array, tx: HapticaAudioFilesDirectoryTransaction): void;
 
   /**
    * Deletes this audio file.
@@ -426,7 +425,7 @@ export interface HapticaAudioFile {
    * If this audio file does not belong to this extension, then this method will throw a
    * permissions error.
    */
-  delete(): void;
+  delete(tx: HapticaAudioFilesDirectoryTransaction): void;
 }
 
 declare global {
@@ -454,11 +453,6 @@ export type HapticaPattern = {
    * The AHAP Pattern data.
    */
   ahapPattern: AHAPPattern;
-
-  /**
-   * An array of audio waveform files that are played with the pattern.
-   */
-  audioFiles: HapticaAudioFile[];
 
   /**
    * The creation date of the pattern.
@@ -621,6 +615,24 @@ export class HapticaPatterns {
 const patterns = new HapticaPatterns(Symbol._hapticaPrivate);
 
 /**
+ * A transaction for the audio files directory.
+ */
+export interface HapticaAudioFilesDirectoryTransaction {
+  /**
+   * Loads all saved {@link HapticaAudioFile}s that this extension has access to.
+   */
+  savedFiles(): HapticaAudioFile[];
+
+  /**
+   * Loads all {@link HapticaAudioFile}s specified as waveform paths in `pattern`.
+   *
+   * @param pattern An {@link AHAPPattern}.
+   * @returns All {@link HapticaAudioFile}s associated with `pattern`.
+   */
+  savedFilesForPattern(pattern: AHAPPattern): HapticaAudioFile[];
+}
+
+/**
  * A class for managing the extension's stored audio files.
  */
 export class HapticaAudioFilesDirectory {
@@ -629,20 +641,15 @@ export class HapticaAudioFilesDirectory {
   }
 
   /**
-   * Loads all {@link HapticaAudioFile}s that this extension owns.
-   */
-  files(): HapticaAudioFile[] {
-    return _hapticaPrimitives.audioDirectoryFiles();
-  }
-
-  /**
-   * Loads all {@link HapticaAudioFile}s specified as waveform paths in `pattern`.
+   * Runs a transaction on the audio files directory.
    *
-   * @param pattern An {@link AHAPPattern}.
-   * @returns All {@link HapticaAudioFile}s associated with `pattern`.
+   * @param fn The function to run the transaction.
+   * @returns Whatever `fn` returns.
    */
-  filesForPattern(pattern: AHAPPattern): HapticaAudioFile[] {
-    return _hapticaPrimitives.audioDirectoryFilesForPattern(pattern);
+  withTransaction<T>(
+    fn: (transaction: HapticaAudioFilesDirectoryTransaction) => T,
+  ) {
+    return _hapticaPrimitives.audioDirectoryWithTransaction(fn);
   }
 }
 
