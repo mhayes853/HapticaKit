@@ -12,6 +12,17 @@ function _hapticaInternalConstructorCheck(key: Symbol) {
   }
 }
 
+/**
+ * A data type describing a version of the app.
+ *
+ * You can get the current app version using the {@link HAPTICA_APP_VERSION} constant.
+ */
+export type HapticaAppVersion = {
+  majorVersion: number;
+  minorVersion: number;
+  patchVersion: number;
+};
+
 export type HapticaExtensionErrorCode =
   | "ManifestAlreadyRegistered"
   | "ManifestNotRegistered"

@@ -5,13 +5,15 @@ import {
   HapticaPatternsHandle,
   HapticaExtensionManifest,
   HapticaExtensionSettingsSchema,
-  HapticaAudioFile,
-  AHAPPattern,
   HapticaAudioFilesDirectoryTransaction,
+  HapticaAppVersion,
 } from "./index";
 
 declare global {
+  const HAPTICA_APP_VERSION: HapticaAppVersion;
+
   interface _HapticaPrimitives {
+    appVersionString(): string;
     extensionID(): HapticaExtensionID;
     settingsValue(
       schema: HapticaExtensionSettingsSchema,
