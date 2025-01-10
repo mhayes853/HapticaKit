@@ -36,18 +36,14 @@ export type HapticaExtensionErrorCode =
  * An Error subclass thrown by APIs that serve haptica extensions.
  */
 export class HapticaExtensionError extends Error {
-  private _code: HapticaExtensionErrorCode;
-
   /**
    * The error code associated with this error.
    */
-  get code() {
-    return this._code;
-  }
+  code: HapticaExtensionErrorCode;
 
   constructor(code: HapticaExtensionErrorCode, message: string) {
     super(message);
-    this._code = code;
+    this.code = code;
   }
 
   /**
