@@ -26,16 +26,9 @@ var HapticaExtensionError = (function (_super) {
   __extends(HapticaExtensionError, _super);
   function HapticaExtensionError(code, message) {
     var _this = _super.call(this, message) || this;
-    _this._code = code;
+    _this.code = code;
     return _this;
   }
-  Object.defineProperty(HapticaExtensionError.prototype, "code", {
-    get: function () {
-      return this._code;
-    },
-    enumerable: false,
-    configurable: true
-  });
   return HapticaExtensionError;
 }(Error));
 `;

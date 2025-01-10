@@ -32,150 +32,125 @@ export type HapticaExtensionErrorCode =
   | "AudioFileNotFound"
   | "InvalidResourcePermissions";
 
-export interface HapticaExtensionErrorConstructor {
-  new (code: HapticaExtensionErrorCode, message: string): HapticaExtensionError;
+/**
+ * An Error subclass thrown by APIs that serve haptica extensions.
+ */
+export class HapticaExtensionError extends Error {
+  private _code: HapticaExtensionErrorCode;
+
+  /**
+   * The error code associated with this error.
+   */
+  get code() {
+    return this._code;
+  }
+
+  constructor(code: HapticaExtensionErrorCode, message: string) {
+    super(message);
+    this._code = code;
+  }
 
   /**
    * Thrown when registering a manifest more than once.
    */
-  MANIFEST_ALREADY_REGISTERED: HapticaExtensionError;
+  static MANIFEST_ALREADY_REGISTERED = new HapticaExtensionError(
+    "ManifestAlreadyRegistered",
+    "A manifest has already been registered. You cannot register a manifest more than once. If you wish to reset the extension, call `extension.reset`.",
+  );
 
   /**
    * Thrown when the manifest has not been registered.
    */
-  MANIFEST_NOT_REGISTERED: HapticaExtensionError;
+  static MANIFEST_NOT_REGISTERED = new HapticaExtensionError(
+    "ManifestNotRegistered",
+    "The manifest has not been registered.",
+  );
 
   /**
    * Thrown when attempting to set a value for a non-existent setting name.
    */
-  settingNameNotFound(
-    name: string,
-    validNames: string[],
-  ): HapticaExtensionError;
+  static settingNameNotFound(name: string, validNames: string[]) {
+    return new HapticaExtensionError(
+      "SettingNameNotFound",
+      `'${name}' is not a valid setting name. Valid names are ${validNames.join(", ")}.`,
+    );
+  }
 
   /**
    * Thrown when attempting to set a wrongly typed value for a setting name.
    */
-  invalidSettingNameType(
+  static invalidSettingNameType(
     name: string,
     type: string,
     expectedType: string,
-  ): HapticaExtensionError;
+  ) {
+    return new HapticaExtensionError(
+      "InvalidSettingNameType",
+      `'${type}' is not a valid type for setting '${name}'. Expected '${expectedType}'.`,
+    );
+  }
 
   /**
    * Thrown when attempting to operate on an {@link HapticaPattern} with an ID that does not exist.
    */
-  patternWithIdNotFound(id: HapticaPatternID): HapticaExtensionError;
+  static patternWithIdNotFound(id: HapticaPatternID) {
+    return new HapticaExtensionError(
+      "PatternWithIdNotFound",
+      `Pattern with id '${id}' was not found.`,
+    );
+  }
 
   /**
    * Thrown when attempting to delete an {@link HapticaAudioFile} that does not exist in the
    * file system
    */
-  audioFileNotFound(name: string): HapticaExtensionError;
+  static audioFileNotFound(name: string) {
+    return new HapticaExtensionError(
+      "AudioFileNotFound",
+      `Audio file named ${name} was not found.`,
+    );
+  }
 
   /**
    * Thrown when attempting to modify or delete an {@link HapticaAudioFile} that this extension is
    * not permitted to modify.
    */
-  audioFileInvalidPermissions(
+  static audioFileInvalidPermissions(
     name: string,
     owner: HapticaResourceOwner,
-  ): HapticaExtensionError;
+  ) {
+    if (owner.type === "main-application") {
+      return new HapticaExtensionError(
+        "InvalidResourcePermissions",
+        `Cannot save or delete ${name} from this extension. ${name} is owned by the main application; your extension only has read-only access to the file.`,
+      );
+    }
+    return new HapticaExtensionError(
+      "InvalidResourcePermissions",
+      `Cannot save or delete ${name} from this extension. ${name} is owned by another extension with id ${owner.id}; your extension only has read-only access to the file.`,
+    );
+  }
 
   /**
    * Thrown when attempting to modify or delete an {@link HapticaPattern} that this extension is
    * not permitted to modify.
    */
-  hapticPatternInvalidPermissions(
+  static hapticPatternInvalidPermissions(
     name: string,
     owner: HapticaResourceOwner,
-  ): HapticaExtensionError;
-}
-
-/**
- * An Error subclass thrown by APIs that serve haptica extensions.
- */
-export interface HapticaExtensionError extends Error {
-  /**
-   * The error code associated with this error.
-   */
-  get code(): HapticaExtensionErrorCode;
-}
-
-declare global {
-  /**
-   * An Error subclass thrown by APIs that serve haptica extensions.
-   */
-  var HapticaExtensionError: HapticaExtensionErrorConstructor;
-}
-
-HapticaExtensionError.MANIFEST_ALREADY_REGISTERED = new HapticaExtensionError(
-  "ManifestAlreadyRegistered",
-  "A manifest has already been registered. You cannot register a manifest more than once. If you wish to reset the extension, call `extension.reset`.",
-);
-
-HapticaExtensionError.MANIFEST_NOT_REGISTERED = new HapticaExtensionError(
-  "ManifestNotRegistered",
-  "The manifest has not been registered.",
-);
-
-HapticaExtensionError.settingNameNotFound = function (name, validNames) {
-  return new HapticaExtensionError(
-    "SettingNameNotFound",
-    `'${name}' is not a valid setting name. Valid names are ${validNames.join(", ")}.`,
-  );
-};
-
-HapticaExtensionError.invalidSettingNameType = function (
-  name,
-  type,
-  expectedType,
-) {
-  return new HapticaExtensionError(
-    "InvalidSettingNameType",
-    `'${type}' is not a valid type for setting '${name}'. Expected '${expectedType}'.`,
-  );
-};
-
-HapticaExtensionError.patternWithIdNotFound = function (id) {
-  return new HapticaExtensionError(
-    "PatternWithIdNotFound",
-    `Pattern with id '${id}' was not found.`,
-  );
-};
-
-HapticaExtensionError.audioFileNotFound = function (name) {
-  return new HapticaExtensionError(
-    "AudioFileNotFound",
-    `Audio file named ${name} was not found.`,
-  );
-};
-
-HapticaExtensionError.audioFileInvalidPermissions = function (name, owner) {
-  if (owner.type === "main-application") {
+  ) {
+    if (owner.type === "main-application") {
+      return new HapticaExtensionError(
+        "InvalidResourcePermissions",
+        `Cannot update or delete ${name} from this extension. ${name} is owned by the main application; your extension only has read-only access to the pattern.`,
+      );
+    }
     return new HapticaExtensionError(
       "InvalidResourcePermissions",
-      `Cannot save or delete ${name} from this extension. ${name} is owned by the main application; your extension only has read-only access to the file.`,
+      `Cannot update or delete ${name} from this extension. ${name} is owned by another extension with id ${owner.id}; your extension only has read-only access to the pattern.`,
     );
   }
-  return new HapticaExtensionError(
-    "InvalidResourcePermissions",
-    `Cannot save or delete ${name} from this extension. ${name} is owned by another extension with id ${owner.id}; your extension only has read-only access to the file.`,
-  );
-};
-
-HapticaExtensionError.hapticPatternInvalidPermissions = function (name, owner) {
-  if (owner.type === "main-application") {
-    return new HapticaExtensionError(
-      "InvalidResourcePermissions",
-      `Cannot update or delete ${name} from this extension. ${name} is owned by the main application; your extension only has read-only access to the pattern.`,
-    );
-  }
-  return new HapticaExtensionError(
-    "InvalidResourcePermissions",
-    `Cannot update or delete ${name} from this extension. ${name} is owned by another extension with id ${owner.id}; your extension only has read-only access to the pattern.`,
-  );
-};
+}
 
 /**
  * Parameter ids that can be used for haptic events.
@@ -242,12 +217,14 @@ export type AHAPHapticContinuousEvent = AHAPBaseEvent<{
   EventDuration: number;
 }>;
 
+export type AHAPWaveformPath = string | HapticaAudioFileID;
+
 /**
  * An audio custom event from CoreHaptics.
  */
 export type AHAPAudioCustomEvent = AHAPBaseEvent<{
   EventType: "AudioCustom";
-  EventWaveformPath: string;
+  EventWaveformPath: AHAPWaveformPath;
   EventDuration?: number;
   EventWaveformLoopEnabled?: boolean;
   EventWaveformUseVolumeEnvelope?: boolean;
@@ -371,9 +348,9 @@ export interface HapticaAudioFileConstructor {
   /**
    * Constructs an {@link HapticaAudioFile}.
    *
-   * @param filename The name of the file.
+   * @param filename The name or {@link HapticaAudioFileID} of the file.
    */
-  new (filename: string): HapticaAudioFile;
+  new (filename: string | HapticaAudioFileID): HapticaAudioFile;
 }
 
 /**
@@ -397,54 +374,6 @@ export type HapticaResourceOwner =
        */
       id: HapticaExtensionID;
     };
-
-export interface HapticaAudioFile {
-  /**
-   * The filename of this file.
-   */
-  get filename(): string;
-
-  /**
-   * The owner this audio file.
-   *
-   * If the owner type is `"main"`, then this file is owned by the main application.
-   * If the owner type is `"extension"`, then this file is owned by an extension.
-   *
-   * The owner type must be `"extension"` and the corresponding `id` field must be equal to this
-   * extension's ID if you want to call `save` or `delete`. Files that are not owned by this
-   * extension are read-only, and cannot be saved or deleted. Calling `save` or `delete` on a file
-   * this this extension does not own will result in a permissions error being thrown.
-   */
-  get owner(): HapticaResourceOwner;
-
-  /**
-   * Loads the bytes of this file.
-   */
-  bytes(tx: HapticaAudioFilesDirectoryTransaction): Uint8Array;
-
-  /**
-   * Saves this audio file.
-   *
-   * If this audio file does not belong to this extension, then this method will throw a
-   * permissions error.
-   */
-  save(data: Uint8Array, tx: HapticaAudioFilesDirectoryTransaction): void;
-
-  /**
-   * Deletes this audio file.
-   *
-   * If this audio file does not belong to this extension, then this method will throw a
-   * permissions error.
-   */
-  delete(tx: HapticaAudioFilesDirectoryTransaction): void;
-}
-
-declare global {
-  /**
-   * An audio file from the app.
-   */
-  var HapticaAudioFile: HapticaAudioFileConstructor;
-}
 
 /**
  * A haptics pattern.
@@ -1126,6 +1055,13 @@ export class HapticaExtension {
   }
 
   /**
+   * The {@link HapticaResourceOwner} value for this extension.
+   */
+  get owner(): HapticaResourceOwner {
+    return { type: "extension", id: this.id };
+  }
+
+  /**
    * The registered {@link HapticaExtensionManifest}, if `registerManifest` has been called.
    */
   get manifest() {
@@ -1190,6 +1126,92 @@ export class HapticaExtension {
  * An object containing core properties to this extension.
  */
 const extension = new HapticaExtension(Symbol._hapticaPrivate);
+
+/**
+ * An identifier for an {@link HapticaAudioFile}.
+ *
+ * Audio files are identified by both their name and owner. 2 separate owners can have a file
+ * with the same name, but the file names belonging to each owner must be unique. In other words,
+ * if extension A has a file named "foo.caf", then extension B can also have a file named
+ * "foo.caf". However, extension A or B cannot have a second file named "foo.caf".
+ *
+ * This class implements `toJSON`, so you can safely serialize it as a part of an AHAP-compatible
+ * JSON pattern.
+ */
+export class HapticaAudioFileID {
+  constructor(
+    readonly name: string,
+    readonly owner: HapticaResourceOwner = extension.owner,
+  ) {}
+
+  toString() {
+    return this.toJSON();
+  }
+
+  toJSON() {
+    return `${this.ownerString()}|${this.name}`;
+  }
+
+  private ownerString() {
+    if (this.owner.type === "main-application") {
+      return this.owner.type;
+    }
+    return `${this.owner.type}-${this.owner.id}`;
+  }
+}
+
+export interface HapticaAudioFile {
+  /**
+   * The {@link HapticaAudioFileID} for this file.
+   */
+  get id(): HapticaAudioFileID;
+
+  /**
+   * The filename of this file.
+   */
+  get filename(): string;
+
+  /**
+   * The owner this audio file.
+   *
+   * If the owner type is `"main"`, then this file is owned by the main application.
+   * If the owner type is `"extension"`, then this file is owned by an extension.
+   *
+   * The owner type must be `"extension"` and the corresponding `id` field must be equal to this
+   * extension's ID if you want to call `save` or `delete`. Files that are not owned by this
+   * extension are read-only, and cannot be saved or deleted. Calling `save` or `delete` on a file
+   * this this extension does not own will result in a permissions error being thrown.
+   */
+  get owner(): HapticaResourceOwner;
+
+  /**
+   * Loads the bytes of this file.
+   */
+  bytes(tx: HapticaAudioFilesDirectoryTransaction): Uint8Array;
+
+  /**
+   * Saves this audio file.
+   *
+   * If this audio file does not belong to this extension, then this method will throw a
+   * permissions error.
+   */
+  save(data: Uint8Array, tx: HapticaAudioFilesDirectoryTransaction): void;
+
+  /**
+   * Deletes this audio file.
+   *
+   * If this audio file does not belong to this extension, then this method will throw a
+   * permissions error.
+   */
+  delete(tx: HapticaAudioFilesDirectoryTransaction): void;
+}
+
+declare global {
+  /**
+   * An audio file from the app.
+   */
+  var HapticaAudioFile: HapticaAudioFileConstructor;
+}
 
 export {
   device,

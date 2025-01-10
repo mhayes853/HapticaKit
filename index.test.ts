@@ -2,6 +2,7 @@ import {
   AHAPPattern,
   audioFilesDirectory,
   extension,
+  HapticaAudioFileID,
   HapticaExtensionError,
   HapticaExtensionSettings,
   patterns,
@@ -295,6 +296,61 @@ describe("HapticaKit tests", () => {
           HapticaExtensionError.audioFileNotFound(file.filename),
         );
       });
+    });
+
+    it("should throw a permissions error when trying to save an unowned file", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const owner = { type: "main-application" } as const;
+        const file = new HapticaAudioFile(
+          new HapticaAudioFileID("coins.caf", owner),
+        );
+        expect(() => file.save(new Uint8Array([0x01, 0x02]), tx)).toThrow(
+          HapticaExtensionError.audioFileInvalidPermissions(
+            file.filename,
+            owner,
+          ),
+        );
+      });
+    });
+
+    it("should throw a permissions error when trying to delete an unowned file", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const owner = { type: "main-application" } as const;
+        const file = new HapticaAudioFile(
+          new HapticaAudioFileID("coins.caf", owner),
+        );
+        expect(() => file.delete(tx)).toThrow(
+          HapticaExtensionError.audioFileInvalidPermissions(
+            file.filename,
+            owner,
+          ),
+        );
+      });
+    });
+  });
+
+  describe("HapticaAudioFileID tests", () => {
+    it("should stringify itself into json", () => {
+      let id = new HapticaAudioFileID("test.caf", {
+        type: "main-application",
+      });
+      expect(JSON.stringify(id)).toEqual('"main-application|test.caf"');
+
+      id = new HapticaAudioFileID("test.caf", {
+        type: "extension",
+        id: "8A5DFE4A-B10A-4D5A-931B-EAA4D23347E4",
+      });
+      expect(JSON.stringify(id)).toEqual(
+        '"extension-8A5DFE4A-B10A-4D5A-931B-EAA4D23347E4|test.caf"',
+      );
+    });
+
+    it("should be able to be used to construct Audio Files", () => {
+      const id = new HapticaAudioFileID("test.caf", {
+        type: "main-application",
+      });
+      const file = new HapticaAudioFile(id);
+      expect(file.owner).toEqual({ type: "main-application" });
     });
   });
 

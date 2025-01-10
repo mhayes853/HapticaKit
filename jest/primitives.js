@@ -1,4 +1,9 @@
 const uuid = require("uuid");
+const {
+  HapticaAudioFileID,
+  extension,
+  HapticaExtensionError,
+} = require("../index");
 
 const EXTENSION_ID = uuid.v7();
 
@@ -105,18 +110,18 @@ class MockAudioDirectoryTransaction {
   }
 
   checkFile(file) {
-    if (!this.#files.has(file.filename)) {
+    if (!this.#files.has(JSON.stringify(file.id))) {
       throw HapticaExtensionError.audioFileNotFound(file.filename);
     }
   }
 
   setFile(file) {
-    this.#files.set(file.filename, file);
+    this.#files.set(JSON.stringify(file.id), file);
   }
 
   deleteFile(file) {
     this.checkFile(file);
-    this.#files.delete(file.filename);
+    this.#files.delete(JSON.stringify(file.id));
   }
 }
 
@@ -129,16 +134,24 @@ const waveformPaths = (pattern) => {
 };
 
 class MockAudioFile {
-  filename;
+  #id;
   #bytes;
   lastEditedAt;
 
-  get writeScope() {
-    return { type: "extension", id: EXTENSION_ID };
+  get id() {
+    return this.#id;
   }
 
-  constructor(filename) {
-    this.filename = filename;
+  get filename() {
+    return this.#id.name;
+  }
+
+  get owner() {
+    return this.#id.owner;
+  }
+
+  constructor(id) {
+    this.#id = typeof id === "string" ? new HapticaAudioFileID(id) : id;
     this.lastEditedAt = new Date();
   }
 
@@ -148,15 +161,31 @@ class MockAudioFile {
   }
 
   save(data, tx) {
+    if (!isOwnedByExtension(this.#id)) {
+      throw HapticaExtensionError.audioFileInvalidPermissions(
+        this.filename,
+        this.owner,
+      );
+    }
     this.#bytes = data;
     this.lastEditedAt = new Date();
     tx.setFile(this);
   }
 
   delete(tx) {
+    if (!isOwnedByExtension(this.#id)) {
+      throw HapticaExtensionError.audioFileInvalidPermissions(
+        this.filename,
+        this.owner,
+      );
+    }
     tx.deleteFile(this);
   }
 }
+
+const isOwnedByExtension = (id) => {
+  return id.owner.id === extension.owner.id;
+};
 
 const DEFAULT_PATTERN = {
   name: "",
@@ -171,14 +200,9 @@ class MockPatternsHandle {
   }
 
   fetchPatterns(predicate) {
-    return this.patterns
-      .filter((p) => {
-        return typeof predicate === "function" ? predicate(p) : true;
-      })
-      .map((p) => ({
-        ...p,
-        audioFiles: primitives.audioDirectoryFilesForPattern(p.ahapPattern),
-      }));
+    return this.patterns.filter((p) => {
+      return typeof predicate === "function" ? predicate(p) : true;
+    });
   }
 
   create(patternCreate) {
@@ -191,10 +215,7 @@ class MockPatternsHandle {
       lastEditedAt: now,
     };
     this.patterns.push(pattern);
-    return {
-      ...pattern,
-      audioFiles: primitives.audioDirectoryFilesForPattern(pattern.ahapPattern),
-    };
+    return pattern;
   }
 
   update(patternUpdate) {
@@ -210,10 +231,7 @@ class MockPatternsHandle {
       lastEditedAt: new Date(),
     };
     const pattern = this.patterns[patternIndex];
-    return {
-      ...pattern,
-      audioFiles: primitives.audioDirectoryFilesForPattern(pattern.ahapPattern),
-    };
+    return pattern;
   }
 
   deletePattern(id) {
