@@ -1,4 +1,5 @@
 import {
+  __HAPTICA_UUID_V7_REGEX,
   AHAPPattern,
   audioFilesDirectory,
   extension,
@@ -13,7 +14,7 @@ describe("HapticaKit tests", () => {
     beforeEach(() => extension.reset());
 
     it("should use a uuid for the mocked extension id", () => {
-      expect(isUUIDv7(extension.id)).toEqual(true);
+      expect(__HAPTICA_UUID_V7_REGEX.test(extension.id)).toEqual(true);
     });
 
     it("should throw an error when trying to get settings for unregistered extension", () => {
@@ -40,12 +41,6 @@ describe("HapticaKit tests", () => {
         HapticaExtensionError.MANIFEST_ALREADY_REGISTERED,
       );
     });
-
-    const isUUIDv7 = (uuid: string) => {
-      const uuidV4Regex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      return uuidV4Regex.test(uuid);
-    };
   });
 
   const TEST_AHAP_PATTERN: AHAPPattern = {
@@ -351,6 +346,28 @@ describe("HapticaKit tests", () => {
       });
       const file = new HapticaAudioFile(id);
       expect(file.owner).toEqual({ type: "main-application" });
+    });
+
+    it.each([
+      "",
+      "sklslhjdklhdkjh",
+      "main|test",
+      "extension|test",
+      "dkljdlkjdl.mp3",
+      "foo|bar.mp3",
+      "extension|bar.mp3",
+      "extension-not-a-valid-uuid|bar.mp3",
+      "extension-|bar.mp3",
+      "main-|bar.mp",
+    ])("should not parse %s", (s) => {
+      expect(HapticaAudioFileID.parse(s)).toEqual(undefined);
+    });
+
+    it.each([
+      new HapticaAudioFileID("test.caf"),
+      new HapticaAudioFileID("foo.mp3", { type: "main-application" }),
+    ])("should be able to be parsed from a string from $name", (id) => {
+      expect(HapticaAudioFileID.parse(id.toString())).toEqual(id);
     });
   });
 

@@ -6,11 +6,14 @@ declare global {
 
 Symbol._hapticaPrivate = Symbol("_hapticaPrivate");
 
-function _hapticaInternalConstructorCheck(key: Symbol) {
+const _hapticaInternalConstructorCheck = (key: Symbol) => {
   if (key !== Symbol._hapticaPrivate) {
     throw new TypeError("Illegal constructor");
   }
-}
+};
+
+export const __HAPTICA_UUID_V7_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * A data type describing a version of the app.
@@ -1139,6 +1142,28 @@ export class HapticaAudioFileID {
     readonly name: string,
     readonly owner: HapticaResourceOwner = extension.owner,
   ) {}
+
+  /**
+   * Attempts to parse a {@link HapticaAudioFileID} from a string.
+   *
+   * The string must be in the same format that `toString` and `toJSON` return.
+   *
+   * @param str The string to parse.
+   * @returns A {@link HapticaAudioFileID} if successful, `undefined` otherwise.
+   */
+  static parse(str: string): HapticaAudioFileID | undefined {
+    const splits = str.split("|", 2);
+    if (splits.length < 2) return undefined;
+    if (splits[0] == "main-application") {
+      return new HapticaAudioFileID(splits[1], { type: "main-application" });
+    }
+    const extensionPrefix = "extension-";
+    if (!splits[0].startsWith(extensionPrefix)) return undefined;
+    const uuid = splits[0].substring(extensionPrefix.length);
+    return __HAPTICA_UUID_V7_REGEX.test(uuid)
+      ? new HapticaAudioFileID(splits[1], { type: "extension", id: uuid })
+      : undefined;
+  }
 
   toString() {
     return this.toJSON();
