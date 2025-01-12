@@ -1,5 +1,4 @@
 import {
-  __HAPTICA_UUID_V7_REGEX,
   AHAPPattern,
   audioFilesDirectory,
   extension,
@@ -14,7 +13,9 @@ describe("HapticaKit tests", () => {
     beforeEach(() => extension.reset());
 
     it("should use a uuid for the mocked extension id", () => {
-      expect(__HAPTICA_UUID_V7_REGEX.test(extension.id)).toEqual(true);
+      expect(
+        HapticaAudioFileID.__HAPTICA_UUID_V7_REGEX.test(extension.id),
+      ).toEqual(true);
     });
 
     it("should throw an error when trying to get settings for unregistered extension", () => {

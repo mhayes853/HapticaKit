@@ -12,9 +12,6 @@ const _hapticaInternalConstructorCheck = (key: Symbol) => {
   }
 };
 
-export const __HAPTICA_UUID_V7_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 /**
  * A data type describing a version of the app.
  *
@@ -1143,6 +1140,9 @@ export class HapticaAudioFileID {
     readonly owner: HapticaResourceOwner = extension.owner,
   ) {}
 
+  static __HAPTICA_UUID_V7_REGEX =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
   /**
    * Attempts to parse a {@link HapticaAudioFileID} from a string.
    *
@@ -1160,7 +1160,7 @@ export class HapticaAudioFileID {
     const extensionPrefix = "extension-";
     if (!splits[0].startsWith(extensionPrefix)) return undefined;
     const uuid = splits[0].substring(extensionPrefix.length);
-    return __HAPTICA_UUID_V7_REGEX.test(uuid)
+    return HapticaAudioFileID.__HAPTICA_UUID_V7_REGEX.test(uuid)
       ? new HapticaAudioFileID(splits[1], { type: "extension", id: uuid })
       : undefined;
   }
