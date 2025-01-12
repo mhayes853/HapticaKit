@@ -1,4 +1,6 @@
 import {
+  _hapticaAHAPJSONParseReviver,
+  AHAPAudioCustomEvent,
   AHAPPattern,
   audioFilesDirectory,
   extension,
@@ -349,6 +351,8 @@ describe("HapticaKit tests", () => {
       expect(file.owner).toEqual({ type: "main-application" });
     });
 
+    class X {}
+
     it.each([
       "",
       "sklslhjdklhdkjh",
@@ -360,8 +364,14 @@ describe("HapticaKit tests", () => {
       "extension-not-a-valid-uuid|bar.mp3",
       "extension-|bar.mp3",
       "main-|bar.mp",
+      ,
+      10,
+      true,
+      {},
+      [1, 2, 3, 4],
+      new X(),
     ])("should not parse %s", (s) => {
-      expect(HapticaAudioFileID.parse(s)).toEqual(undefined);
+      expect(HapticaAudioFileID.parse(s as any)).toEqual(undefined);
     });
 
     it.each([
@@ -370,6 +380,32 @@ describe("HapticaKit tests", () => {
     ])("should be able to be parsed from a string from $name", (id) => {
       expect(HapticaAudioFileID.parse(id.toString())).toEqual(id);
     });
+
+    it("should be JSON Parseable when parsing an AHAP Pattern", () => {
+      const index = TEST_AHAP_PATTERN.Pattern.findIndex((e) => {
+        return "Event" in e && e.Event.EventType == "AudioCustom";
+      });
+      const baseEvent = TEST_AHAP_PATTERN.Pattern[index] as {
+        Event: AHAPAudioCustomEvent;
+      };
+      const id = new HapticaAudioFileID("test.caf", {
+        type: "main-application",
+      });
+      const newEvent = {
+        Event: { ...baseEvent.Event, eventWaveformPath: id },
+      };
+      const pattern = {
+        ...TEST_AHAP_PATTERN,
+        Pattern: arrayWith(TEST_AHAP_PATTERN.Pattern, index, newEvent),
+      };
+      expect(
+        JSON.parse(JSON.stringify(pattern), _hapticaAHAPJSONParseReviver),
+      ).toEqual(pattern);
+    });
+
+    const arrayWith = <T>(arr: T[], index: number, element: T) => {
+      return arr.map((e, i) => (i === index ? element : e));
+    };
   });
 
   describe("HapticaExtensionSettings tests", () => {

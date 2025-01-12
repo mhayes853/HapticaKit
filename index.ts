@@ -12,6 +12,13 @@ const _hapticaInternalConstructorCheck = (key: Symbol) => {
   }
 };
 
+export const _hapticaAHAPJSONParseReviver = (key: string, object: any) => {
+  if (key === "eventWaveformPath") {
+    return HapticaAudioFileID.parse(object) ?? object;
+  }
+  return object;
+};
+
 /**
  * A data type describing a version of the app.
  *
@@ -1152,7 +1159,7 @@ export class HapticaAudioFileID {
    * @returns A {@link HapticaAudioFileID} if successful, `undefined` otherwise.
    */
   static parse(str: string): HapticaAudioFileID | undefined {
-    const splits = str.split("|", 2);
+    const splits = str.toString().split("|", 2);
     if (splits.length < 2) return undefined;
     if (splits[0] == "main-application") {
       return new HapticaAudioFileID(splits[1], { type: "main-application" });
