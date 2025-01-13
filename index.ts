@@ -340,10 +340,29 @@ export type AHAPPattern = {
   Pattern: AHAPPatternElement[];
 };
 
+/**
+ * A type for describing a device's hardware support for haptics.
+ */
 export type DeviceHapticsHardwareCompatability = {
-  isHapticsSupported: boolean;
+  /**
+   * Whether or not haptic feedback is supported by the hardware.
+   */
+  isFeedbackSupported: boolean;
+
+  /**
+   * Whether or not the haptics engine can play audio alongside feedback.
+   */
   isAudioSupported: boolean;
 };
+
+/**
+ * A descriptor for the level of access that this extension has for a resource.
+ */
+export enum HapticaResourceAccessLevel {
+  NoAccess = 0,
+  ReadOnly = 1,
+  ReadWrite = 2,
+}
 
 export type HapticaPatternID = string;
 
@@ -406,6 +425,11 @@ export type HapticaPattern = {
    * The time that the pattern was last edited by the user.
    */
   lastEditedAt: Date;
+
+  /**
+   * The level of access that this extension has to the resource.
+   */
+  accessLevel: HapticaResourceAccessLevel;
 
   /**
    * The owner of the pattern.
@@ -775,7 +799,7 @@ export type HapticaExtensionSettingsValidationResult =
  * Attributes affect how the app treats the setting value. For instance, the `"secure"` attribute
  * will ensure that the setting value is persisted in secure storage (ie. Keychain).
  */
-export type HapticaSettingAttribute = "secure";
+export type HapticaSettingAttribute = { type: "secure" };
 
 type BaseSettingsSchema<Value extends HapticaExtensionSettingsValue> = {
   /**
@@ -1211,6 +1235,15 @@ export interface HapticaAudioFile {
    * this this extension does not own will result in a permissions error being thrown.
    */
   get owner(): HapticaResourceOwner;
+
+  /**
+   * The access level that this extension has to this audio file within the specified transaction.
+   *
+   * You can use this access level to determine what operations you can perform on this file.
+   */
+  accessLevel(
+    tx: HapticaAudioFilesDirectoryTransaction,
+  ): HapticaResourceAccessLevel;
 
   /**
    * Loads the bytes of this file.

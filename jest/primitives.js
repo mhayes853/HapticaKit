@@ -3,6 +3,7 @@ const {
   HapticaAudioFileID,
   extension,
   HapticaExtensionError,
+  HapticaResourceAccessLevel,
 } = require("../index");
 
 const EXTENSION_ID = uuid.v7();
@@ -155,31 +156,37 @@ class MockAudioFile {
     this.lastEditedAt = new Date();
   }
 
+  accessLevel(_) {
+    return !isOwnedByExtension(this.#id)
+      ? HapticaResourceAccessLevel.NoAccess
+      : HapticaResourceAccessLevel.ReadWrite;
+  }
+
   bytes(tx) {
+    this.#checkAccessLevel(tx, HapticaResourceAccessLevel.ReadOnly);
     tx.checkFile(this);
     return this.#bytes;
   }
 
   save(data, tx) {
-    if (!isOwnedByExtension(this.#id)) {
-      throw HapticaExtensionError.audioFileInvalidPermissions(
-        this.filename,
-        this.owner,
-      );
-    }
+    this.#checkAccessLevel(tx, HapticaResourceAccessLevel.ReadWrite);
     this.#bytes = data;
     this.lastEditedAt = new Date();
     tx.setFile(this);
   }
 
   delete(tx) {
-    if (!isOwnedByExtension(this.#id)) {
+    this.#checkAccessLevel(tx, HapticaResourceAccessLevel.ReadWrite);
+    tx.deleteFile(this);
+  }
+
+  #checkAccessLevel(tx, level) {
+    if (this.accessLevel(tx) < level) {
       throw HapticaExtensionError.audioFileInvalidPermissions(
         this.filename,
         this.owner,
       );
     }
-    tx.deleteFile(this);
   }
 }
 
@@ -213,6 +220,7 @@ class MockPatternsHandle {
       id: uuid.v7(),
       createdAt: now,
       lastEditedAt: now,
+      accessLevel: HapticaResourceAccessLevel.ReadWrite,
     };
     this.patterns.push(pattern);
     return pattern;

@@ -5,8 +5,10 @@ import {
   audioFilesDirectory,
   extension,
   HapticaAudioFileID,
+  HapticaAudioFilesDirectoryTransaction,
   HapticaExtensionError,
   HapticaExtensionSettings,
+  HapticaResourceAccessLevel,
   patterns,
 } from "./index";
 
@@ -296,6 +298,21 @@ describe("HapticaKit tests", () => {
       });
     });
 
+    it("should throw a permissions error when trying to read an unowned file", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const owner = { type: "main-application" } as const;
+        const file = new HapticaAudioFile(
+          new HapticaAudioFileID("coins.caf", owner),
+        );
+        expect(() => file.bytes(tx)).toThrow(
+          HapticaExtensionError.audioFileInvalidPermissions(
+            file.filename,
+            owner,
+          ),
+        );
+      });
+    });
+
     it("should throw a permissions error when trying to save an unowned file", () => {
       audioFilesDirectory.withTransaction((tx) => {
         const owner = { type: "main-application" } as const;
@@ -322,6 +339,46 @@ describe("HapticaKit tests", () => {
             file.filename,
             owner,
           ),
+        );
+      });
+    });
+
+    it("should be able to read an unowned file if it has read only access", () => {
+      class MockFile extends HapticaAudioFile {
+        level = HapticaResourceAccessLevel.ReadOnly;
+
+        accessLevel(tx: HapticaAudioFilesDirectoryTransaction) {
+          return this.level;
+        }
+      }
+
+      audioFilesDirectory.withTransaction((tx) => {
+        const owner = { type: "main-application" } as const;
+        const file = new MockFile(new HapticaAudioFileID("coins.caf", owner));
+        file.level = HapticaResourceAccessLevel.ReadWrite;
+        const bytes = new Uint8Array([0x01, 0x02]);
+        file.save(bytes, tx);
+        file.level = HapticaResourceAccessLevel.ReadOnly;
+        expect(file.bytes(tx)).toEqual(bytes);
+      });
+    });
+
+    it("should return no access level when not owned by the extension", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile(
+          new HapticaAudioFileID("coins.caf", { type: "main-application" }),
+        );
+        expect(file.accessLevel(tx)).toEqual(
+          HapticaResourceAccessLevel.NoAccess,
+        );
+      });
+    });
+
+    it("should return a read-write access level when owned by the extension", () => {
+      audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        expect(file.accessLevel(tx)).toEqual(
+          HapticaResourceAccessLevel.ReadWrite,
         );
       });
     });
