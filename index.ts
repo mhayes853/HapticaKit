@@ -358,7 +358,7 @@ export type DeviceHapticsHardwareCompatability = {
 /**
  * A descriptor for the level of access that this extension has for a resource.
  */
-export enum HapticaResourceAccessLevel {
+enum HapticaResourceAccessLevel {
   NoAccess = 0,
   ReadOnly = 1,
   ReadWrite = 2,
@@ -1281,6 +1281,7 @@ export {
   secureStorage,
   extension,
   audioFilesDirectory,
+  HapticaResourceAccessLevel,
   AHAP_AUDIO_PARAMETER_IDS,
   AHAP_HAPTIC_PARAMETER_IDS,
   AHAP_DYNAMIC_PARAMETER_IDS,

@@ -344,18 +344,13 @@ describe("HapticaKit tests", () => {
     });
 
     it("should be able to read an unowned file if it has read only access", () => {
-      class MockFile extends HapticaAudioFile {
-        level = HapticaResourceAccessLevel.ReadOnly;
-
-        accessLevel(tx: HapticaAudioFilesDirectoryTransaction) {
-          return this.level;
-        }
-      }
-
       audioFilesDirectory.withTransaction((tx) => {
         const owner = { type: "main-application" } as const;
-        const file = new MockFile(new HapticaAudioFileID("coins.caf", owner));
+        const file = new HapticaAudioFile(
+          new HapticaAudioFileID("coins.caf", owner),
+        ) as any;
         file.level = HapticaResourceAccessLevel.ReadWrite;
+        file.accessLevel = () => file.level;
         const bytes = new Uint8Array([0x01, 0x02]);
         file.save(bytes, tx);
         file.level = HapticaResourceAccessLevel.ReadOnly;
