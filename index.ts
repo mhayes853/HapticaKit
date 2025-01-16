@@ -82,14 +82,10 @@ export class HapticaExtensionError extends Error {
   /**
    * Thrown when attempting to set a wrongly typed value for a setting name.
    */
-  static invalidSettingNameType(
-    name: string,
-    type: string,
-    expectedType: string,
-  ) {
+  static invalidSetting(name: string, errorMessage: string) {
     return new HapticaExtensionError(
       "InvalidSettingNameType",
-      `'${type}' is not a valid type for setting '${name}'. Expected '${expectedType}'.`,
+      `Invalid value passed for setting ${name}: ${errorMessage}`,
     );
   }
 
@@ -761,13 +757,7 @@ export class SecureStorage {
  */
 const secureStorage = new SecureStorage(Symbol._hapticaPrivate);
 
-export type HapticaExtensionSettingsValue =
-  | string
-  | number
-  | boolean
-  | undefined
-  | string[]
-  | Record<string, string>;
+export type HapticaExtensionSettingsValue = string | number | boolean | Date;
 
 /**
  * A change in a settings value.
@@ -842,6 +832,37 @@ type BaseSettingsSchema<Value extends HapticaExtensionSettingsValue> = {
   validate?: (value: Value) => HapticaExtensionSettingsValidationResult;
 };
 
+type BaseNumericalSettingsSchema = BaseSettingsSchema<number> & {
+  format?: (value: number) => string;
+};
+
+export type TextFieldKeyboardType =
+  | "default"
+  | "asciiCapable"
+  | "numbersAndPunctuation"
+  | "URL"
+  | "numberPad"
+  | "phonePad"
+  | "namePhonePad"
+  | "emailAddress"
+  | "decimalPad"
+  | "twitter"
+  | "webSearch"
+  | "asciiCapableNumberPad";
+
+export type DatePickerStyle =
+  | "automatic"
+  | "compact"
+  | "field"
+  | "graphical"
+  | "stepperField"
+  | "wheel";
+
+export type DatePickerDisplayedComponents =
+  | "date"
+  | "hourAndMinute"
+  | "hourMinuteAndSecond";
+
 /**
  * A schema for describing settings value.
  *
@@ -852,10 +873,134 @@ export type HapticaExtensionSettingsSchema =
   | ({
       type: "toggle";
     } & BaseSettingsSchema<boolean>)
-  | ({ type: "text-field" } & BaseSettingsSchema<string | undefined>)
-  | ({ type: "number" } & BaseSettingsSchema<number>)
-  | ({ type: "list" } & BaseSettingsSchema<string[]>)
-  | ({ type: "dictionary" } & BaseSettingsSchema<Record<string, string>>);
+  | ({ type: "text-field" } & BaseSettingsSchema<string> & {
+        placeholder?: string;
+        lineLimit?: number;
+        autoCorrectionDisabled?: boolean;
+        keyboardType?: TextFieldKeyboardType;
+      })
+  | ({ type: "stepper" } & BaseNumericalSettingsSchema & {
+        min?: number;
+        max?: number;
+      })
+  | ({ type: "slider" } & BaseNumericalSettingsSchema & {
+        min: number;
+        max: number;
+        includeStepper?: boolean;
+      })
+  | ({ type: "date-picker" } & BaseSettingsSchema<Date> & {
+        min?: Date;
+        max?: Date;
+        style?: DatePickerStyle;
+        displayedComponents?: DatePickerDisplayedComponents[];
+      });
+
+export type HapticaValidateSettingResult<
+  Value extends HapticaExtensionSettingsValue,
+> = { status: "success"; value: Value } | { status: "error"; message: string };
+
+/**
+ * Validates the specified {@link HapticaExtensionSettingsValue} against the schema.
+ *
+ * @param schema The schema to validate against.
+ * @param value The value to validate.
+ * @returns An {@link HapticaValidateSettingResult}.
+ */
+export const hapticaValidateSetting = <
+  S extends HapticaExtensionSettingsSchema,
+>(
+  schema: HapticaExtensionSettingsSchema,
+  value: HapticaExtensionSettingsValue,
+): HapticaValidateSettingResult<S["defaultValue"]> => {
+  const typeErrorMessage = _hapticaSettingTypeErrorMessage(schema, value);
+  if (typeErrorMessage) {
+    return { status: "error", message: typeErrorMessage };
+  }
+  const validateResult = schema.validate?.(value as never); // NB: Runtime typecheck above.
+  if (validateResult?.status === "error") {
+    return validateResult;
+  }
+  const rangeErrorMessage = _hapticaSettingRangeCheckErrorMessage(
+    schema,
+    value,
+  );
+  if (rangeErrorMessage) {
+    return { status: "error", message: rangeErrorMessage };
+  }
+  return { status: "success", value: value as S["defaultValue"] };
+};
+
+const _hapticaSettingRangeCheckErrorMessage = (
+  schema: HapticaExtensionSettingsSchema,
+  value: HapticaExtensionSettingsValue,
+): string | undefined => {
+  if (
+    schema.type !== "stepper" &&
+    schema.type !== "slider" &&
+    schema.type !== "date-picker"
+  ) {
+    return undefined;
+  }
+  if (!(value instanceof Date) && !(typeof value === "number")) {
+    return undefined;
+  }
+  if (schema.type === "date-picker" && value instanceof Date) {
+    const min = schema.min ?? new Date(-8.64e15);
+    const max = schema.max ?? new Date(8.64e15);
+    if (value < min) {
+      return `The received value (${value.toISOString()}) is below the minimum value of ${min.toISOString()}.`;
+    } else if (value > max) {
+      return `The received value (${value.toISOString()}) is above the maximum value of ${max.toISOString()}.`;
+    } else {
+      return undefined;
+    }
+  }
+  const min = schema.min ?? -Infinity;
+  const max = schema.max ?? Infinity;
+  if (value < min) {
+    return `The received value (${value}) is below the minimum value of ${min}.`;
+  } else if (value > max) {
+    return `The received value (${value}) is above the maximum value of ${max}.`;
+  } else {
+    return undefined;
+  }
+};
+
+const _hapticaSettingTypeErrorMessage = (
+  schema: HapticaExtensionSettingsSchema,
+  value: HapticaExtensionSettingsValue,
+): string | undefined => {
+  const schemaType = _hapticaSettingSchemaTypeName(schema);
+  const valueType = _hapticaSettingValueTypeName(value);
+  if (schemaType !== valueType) {
+    return `Expected type '${schemaType}', but received '${valueType}'.`;
+  }
+  return undefined;
+};
+
+const _hapticaSettingSchemaTypeName = (
+  schema: HapticaExtensionSettingsSchema,
+) => {
+  const map = {
+    toggle: "boolean",
+    "text-field": "string",
+    stepper: "number",
+    slider: "number",
+    "date-picker": "Date",
+  };
+  return map[schema.type];
+};
+
+const _hapticaSettingValueTypeName = (value: HapticaExtensionSettingsValue) => {
+  if (
+    typeof value === "object" &&
+    "constructor" in value &&
+    "name" in value.constructor
+  ) {
+    return value.constructor.name;
+  }
+  return typeof value;
+};
 
 /**
  * A class for reading and editing the settings for your extension.
@@ -881,7 +1026,7 @@ export class HapticaExtensionSettings {
     const schema = this.checkSettingName(settingName);
     const nativeValue = _hapticaPrimitives.settingsValue(schema);
     if (nativeValue !== undefined) return nativeValue;
-    return this.schemas.find((s) => s.key === settingName)?.defaultValue;
+    return schema.defaultValue;
   }
 
   /**
@@ -892,7 +1037,6 @@ export class HapticaExtensionSettings {
    */
   setValue(settingName: string, value: HapticaExtensionSettingsValue) {
     const schema = this.checkSettingName(settingName);
-    this.checkValueType(settingName, schema.type, value);
     _hapticaPrimitives.setSettingsValue(schema, value);
   }
 
@@ -927,47 +1071,6 @@ export class HapticaExtensionSettings {
       name,
       this.schemas.map((s) => s.key),
     );
-  }
-
-  private checkValueType(
-    name: string,
-    type: HapticaExtensionSettingsSchema["type"],
-    value: HapticaExtensionSettingsValue,
-  ) {
-    if (type === "number" && typeof value !== "number") {
-      throw HapticaExtensionError.invalidSettingNameType(
-        name,
-        typeof value,
-        "number",
-      );
-    } else if (
-      type === "text-field" &&
-      !(typeof value === "string" || typeof value === "undefined")
-    ) {
-      throw HapticaExtensionError.invalidSettingNameType(
-        name,
-        typeof value,
-        "string | undefined",
-      );
-    } else if (type === "list" && Array.isArray(value)) {
-      throw HapticaExtensionError.invalidSettingNameType(
-        name,
-        typeof value,
-        "string[]",
-      );
-    } else if (type === "toggle" && typeof value !== "boolean") {
-      throw HapticaExtensionError.invalidSettingNameType(
-        name,
-        typeof value,
-        "boolean",
-      );
-    } else if (type === "dictionary" && typeof value !== "object") {
-      throw HapticaExtensionError.invalidSettingNameType(
-        name,
-        typeof value,
-        "Record<string, string>",
-      );
-    }
   }
 }
 

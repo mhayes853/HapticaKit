@@ -4,6 +4,7 @@ const {
   extension,
   HapticaExtensionError,
   HapticaResourceAccessLevel,
+  hapticaValidateSetting,
 } = require("../index");
 
 const EXTENSION_ID = uuid.v7();
@@ -24,6 +25,10 @@ class MockHapticaPrimitives {
   }
 
   setSettingsValue(schema, value) {
+    const result = hapticaValidateSetting(schema, value);
+    if (result.status === "error") {
+      throw HapticaExtensionError.invalidSetting(schema.key, result.message);
+    }
     this.#settings.set(schema.key, value);
   }
 
