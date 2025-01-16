@@ -34,7 +34,7 @@ export type HapticaExtensionErrorCode =
   | "ManifestAlreadyRegistered"
   | "ManifestNotRegistered"
   | "SettingNameNotFound"
-  | "InvalidSettingNameType"
+  | "InvalidSettingValue"
   | "PatternWithIdNotFound"
   | "AudioFileNotFound"
   | "InvalidResourcePermissions";
@@ -84,7 +84,7 @@ export class HapticaExtensionError extends Error {
    */
   static invalidSetting(name: string, errorMessage: string) {
     return new HapticaExtensionError(
-      "InvalidSettingNameType",
+      "InvalidSettingValue",
       `Invalid value passed for setting ${name}: ${errorMessage}`,
     );
   }
@@ -836,6 +836,9 @@ type BaseNumericalSettingsSchema = BaseSettingsSchema<number> & {
   format?: (value: number) => string;
 };
 
+/**
+ * The type of keyboard to use for a text field.
+ */
 export type TextFieldKeyboardType =
   | "default"
   | "asciiCapable"
@@ -850,6 +853,9 @@ export type TextFieldKeyboardType =
   | "webSearch"
   | "asciiCapableNumberPad";
 
+/**
+ * A style for a date picker.
+ */
 export type DatePickerStyle =
   | "automatic"
   | "compact"
@@ -858,6 +864,9 @@ export type DatePickerStyle =
   | "stepperField"
   | "wheel";
 
+/**
+ * Which components to display for a date picker.
+ */
 export type DatePickerDisplayedComponents =
   | "date"
   | "hourAndMinute"
