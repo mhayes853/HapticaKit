@@ -867,10 +867,7 @@ export type DatePickerStyle =
 /**
  * Which components to display for a date picker.
  */
-export type DatePickerDisplayedComponents =
-  | "date"
-  | "hourAndMinute"
-  | "hourMinuteAndSecond";
+export type DatePickerDisplayedComponents = "date" | "hourAndMinute";
 
 /**
  * A schema for describing settings value.
