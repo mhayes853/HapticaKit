@@ -1142,6 +1142,11 @@ export type HapticaExtensionManifest = {
   onExtensionDeleted?: () => Promise<void>;
 
   /**
+   * A callback that runs when your extension has been disabled by the user.
+   */
+  onExtensionDisabled?: () => Promise<void>;
+
+  /**
    * A callback the runs when the user shares a haptic pattern with your extension.
    *
    * @param pattern An {@link HapticaPattern}.
