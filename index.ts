@@ -918,7 +918,7 @@ export type HapticaValidateSettingResult<
 export const hapticaValidateSetting = <
   S extends HapticaExtensionSettingsSchema,
 >(
-  schema: HapticaExtensionSettingsSchema,
+  schema: S,
   value: HapticaExtensionSettingsValue,
 ): HapticaValidateSettingResult<S["defaultValue"]> => {
   const typeErrorMessage = _hapticaSettingTypeErrorMessage(schema, value);
