@@ -21,7 +21,7 @@ export const _hapticaAHAPJSONParseReviver = (key: string, object: any) => {
 
 export const _hapticaAHAPJSONStringifyReplacer = (key: string, object: any) => {
   if (key === "EventWaveformPath" && typeof object === "string") {
-    return new HapticaAudioFileID(object);
+    return new HapticaAudioFileID(object).toJSON();
   }
   return object;
 };
