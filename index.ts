@@ -13,8 +13,15 @@ const _hapticaInternalConstructorCheck = (key: Symbol) => {
 };
 
 export const _hapticaAHAPJSONParseReviver = (key: string, object: any) => {
-  if (key === "eventWaveformPath") {
+  if (key === "EventWaveformPath") {
     return HapticaAudioFileID.parse(object) ?? object;
+  }
+  return object;
+};
+
+export const _hapticaAHAPJSONStringifyReplacer = (key: string, object: any) => {
+  if (key === "EventWaveformPath" && typeof object === "string") {
+    return new HapticaAudioFileID(object);
   }
   return object;
 };
