@@ -1138,11 +1138,16 @@ export type HapticaExtensionManifest = {
    * A callback that runs when your extension has been deleted by the user.
    *
    * You can use this callback to perform any cleanup work that your extension needs on deletion.
+   *
+   * This callback runs regardless of whether or not the extension has been enabled.
    */
   onExtensionDeleted?: () => Promise<void>;
 
   /**
    * A callback that runs when your extension has been disabled by the user.
+   *
+   * When your extension is disabled, the app will not invoke the callbacks that you define in
+   * your extension manifest, except for `onExtensionDeleted`.
    */
   onExtensionDisabled?: () => Promise<void>;
 
