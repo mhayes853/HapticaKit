@@ -841,6 +841,7 @@ type BaseSettingsSchema<Value extends HapticaExtensionSettingsValue> = {
 
 type BaseNumericalSettingsSchema = BaseSettingsSchema<number> & {
   format?: (value: number) => string;
+  step: number;
 };
 
 /**
@@ -877,6 +878,11 @@ export type DatePickerStyle =
 export type DatePickerDisplayedComponents = "date" | "hourAndMinute";
 
 /**
+ * An option to display in a picker.
+ */
+export type PickerOption = { displayName: string; value: string };
+
+/**
  * A schema for describing settings value.
  *
  * Users change the settings for your extension on the extensions settings screen. You can use this
@@ -906,6 +912,9 @@ export type HapticaExtensionSettingsSchema =
         max?: Date;
         style?: DatePickerStyle;
         displayedComponents?: DatePickerDisplayedComponents[];
+      })
+  | ({ type: "picker" } & BaseSettingsSchema<string> & {
+        options: PickerOption[];
       });
 
 export type HapticaValidateSettingResult<
@@ -999,6 +1008,7 @@ const _hapticaSettingSchemaTypeName = (
     "text-field": "string",
     stepper: "number",
     slider: "number",
+    picker: "string",
     "date-picker": "Date",
   };
   return map[schema.type];
