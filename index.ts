@@ -546,6 +546,9 @@ export class HapticaPatterns {
    *
    * Do not escape `handle` from the context of the lambda function, doing so causes undefined behavior.
    *
+   * The transaction has a timeout of 1 second. Any accesses to the patterns storage after the 1
+   * second mark without starting a new transaction will result in an error being thrown.
+   *
    * @param fn A function to run with exclusive access to the patterns storage.
    * @returns Whatever `fn` returns.
    */
@@ -613,13 +616,16 @@ export class HapticaAudioFilesDirectory {
   /**
    * Runs a transaction on the audio files directory.
    *
-   * @param fn The function to run the transaction.
+   * The transaction has a timeout of 1 second. Any accesses to the directory after the 1 second
+   * mark without starting a new transaction will result in an error being thrown.
+   *
+   * @param fn The function to run the transaction with exclusive access to the audio files directory.
    * @returns Whatever `fn` returns.
    */
-  withTransaction<T>(
+  async withTransaction<T>(
     fn: (transaction: HapticaAudioFilesDirectoryTransaction) => T,
   ) {
-    return _hapticaPrimitives.audioDirectoryWithTransaction(fn);
+    return await _hapticaPrimitives.audioDirectoryWithTransaction(fn);
   }
 }
 
@@ -889,9 +895,7 @@ export type PickerOption = { displayName: string; value: string };
  * type to determine the UI and type for a settings value.
  */
 export type HapticaExtensionSettingsSchema =
-  | ({
-      type: "toggle";
-    } & BaseSettingsSchema<boolean>)
+  | ({ type: "toggle" } & BaseSettingsSchema<boolean>)
   | ({ type: "text-field" } & BaseSettingsSchema<string> & {
         placeholder?: string;
         lineLimit?: number;

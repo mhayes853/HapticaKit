@@ -39,7 +39,7 @@ declare global {
     unregisterManifest(): void;
     audioDirectoryWithTransaction<T>(
       fn: (transaction: HapticaAudioFilesDirectoryTransaction) => T,
-    ): T;
+    ): Promise<T>;
   }
 
   const _hapticaPrimitives: _HapticaPrimitives;

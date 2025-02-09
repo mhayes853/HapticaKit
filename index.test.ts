@@ -218,8 +218,8 @@ describe("HapticaKit tests", () => {
   });
 
   describe("AudioFiles tests", () => {
-    it("should load audio associated with the pattern", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should load audio associated with the pattern", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile("coins.caf");
         const file2 = new HapticaAudioFile("test.caf");
         file.save(new Uint8Array([0x01, 0x02]), tx);
@@ -232,13 +232,13 @@ describe("HapticaKit tests", () => {
     it("should be able to load all audio files based on edit time", async () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date(0));
-      const file = audioFilesDirectory.withTransaction((tx) => {
+      const file = await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile("coins.caf");
         file.save(new Uint8Array([0x01, 0x02]), tx);
         return file;
       });
       jest.setSystemTime(new Date(1000));
-      audioFilesDirectory.withTransaction((tx) => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const file2 = new HapticaAudioFile("test.caf");
         file2.save(new Uint8Array([0x03, 0x04]), tx);
         const files = tx.savedFiles();
@@ -247,8 +247,8 @@ describe("HapticaKit tests", () => {
       jest.useRealTimers();
     });
 
-    it("should load audio data", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should load audio data", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile("coins.caf");
         file.save(new Uint8Array([0x01, 0x02]), tx);
         const files = tx.savedFilesForPattern(TEST_AHAP_PATTERN);
@@ -256,8 +256,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should overwrite existing audio", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should overwrite existing audio", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile("coins.caf");
         file.save(new Uint8Array([0x01, 0x02]), tx);
         file.save(new Uint8Array([0x03, 0x04]), tx);
@@ -266,8 +266,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should not load unsaved audio files", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should not load unsaved audio files", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const __ = new HapticaAudioFile("coins.caf");
         const _ = new HapticaAudioFile("test.caf");
         expect(tx.savedFiles()).toEqual([]);
@@ -275,7 +275,7 @@ describe("HapticaKit tests", () => {
     });
 
     it("should not load audio associated with the pattern when it has been deleted", async () => {
-      audioFilesDirectory.withTransaction((tx) => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile("coins.caf");
         file.save(new Uint8Array([0x01, 0x02]), tx);
         file.delete(tx);
@@ -284,8 +284,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should throw an error when trying to delete an unsaved audio file", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should throw an error when trying to delete an unsaved audio file", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile("coins.caf");
         expect(() => file.delete(tx)).toThrow(
           HapticaExtensionError.audioFileNotFound(file.filename),
@@ -293,8 +293,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should throw an error when trying to load bytes from an unsaved audio file", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should throw an error when trying to load bytes from an unsaved audio file", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile("coins.caf");
         expect(() => file.bytes(tx)).toThrow(
           HapticaExtensionError.audioFileNotFound(file.filename),
@@ -302,8 +302,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should throw a permissions error when trying to read an unowned file", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should throw a permissions error when trying to read an unowned file", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const owner = { type: "main-application" } as const;
         const file = new HapticaAudioFile(
           new HapticaAudioFileID("coins.caf", owner),
@@ -317,8 +317,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should throw a permissions error when trying to save an unowned file", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should throw a permissions error when trying to save an unowned file", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const owner = { type: "main-application" } as const;
         const file = new HapticaAudioFile(
           new HapticaAudioFileID("coins.caf", owner),
@@ -332,8 +332,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should throw a permissions error when trying to delete an unowned file", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should throw a permissions error when trying to delete an unowned file", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const owner = { type: "main-application" } as const;
         const file = new HapticaAudioFile(
           new HapticaAudioFileID("coins.caf", owner),
@@ -347,8 +347,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should be able to read an unowned file if it has read only access", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should be able to read an unowned file if it has read only access", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const owner = { type: "main-application" } as const;
         const file = new HapticaAudioFile(
           new HapticaAudioFileID("coins.caf", owner),
@@ -362,8 +362,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should return no access level when not owned by the extension", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should return no access level when not owned by the extension", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile(
           new HapticaAudioFileID("coins.caf", { type: "main-application" }),
         );
@@ -373,8 +373,8 @@ describe("HapticaKit tests", () => {
       });
     });
 
-    it("should return a read-write access level when owned by the extension", () => {
-      audioFilesDirectory.withTransaction((tx) => {
+    it("should return a read-write access level when owned by the extension", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile("coins.caf");
         expect(file.accessLevel(tx)).toEqual(
           HapticaResourceAccessLevel.ReadWrite,
