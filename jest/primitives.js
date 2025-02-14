@@ -5,6 +5,7 @@ const {
   HapticaExtensionError,
   HapticaResourceAccessLevel,
   hapticaValidateSetting,
+  audioMIMEType,
 } = require("../index");
 
 const EXTENSION_ID = uuid.v7();
@@ -159,6 +160,10 @@ class MockAudioFile {
   constructor(id) {
     this.#id = typeof id === "string" ? new HapticaAudioFileID(id) : id;
     this.lastEditedAt = new Date();
+  }
+
+  blob() {
+    return new Blob(this.#bytes, { type: audioMIMEType(this.filename) });
   }
 
   accessLevel(_) {

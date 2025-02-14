@@ -244,6 +244,34 @@ describe("HapticaKit tests", () => {
       });
     });
 
+    it("should be convertible to a blob", async () => {
+      const file = new HapticaAudioFile("coins.caf");
+      const expectedBytes = new Uint8Array([0x01, 0x02]);
+      await audioFilesDirectory.withTransaction((tx) => {
+        file.save(expectedBytes, tx);
+      });
+      expect(await file.blob().text()).toEqual("12");
+    });
+
+    it.each([
+      { name: "song.mp3", mimeType: "audio/mpeg" },
+      { name: "track.aac", mimeType: "audio/aac" },
+      { name: "track.song.aac", mimeType: "audio/aac" },
+      { name: "audio.m4a", mimeType: "audio/mp4" },
+      { name: "recording.wav", mimeType: "audio/wav" },
+      { name: "sample.caf", mimeType: "audio/x-caf" },
+      { name: "sound.aiff", mimeType: "audio/aiff" },
+      { name: "music.alac", mimeType: "audio/x-alac" },
+      { name: "foo.txt", mimeType: "application/octet-stream" },
+      { name: "foo", mimeType: "application/octet-stream" },
+    ])(
+      "should properly get the mime type of the file ($mimeType) for $name",
+      ({ name, mimeType }) => {
+        const file = new HapticaAudioFile(name);
+        expect(file.blob().type).toEqual(mimeType);
+      },
+    );
+
     it("should be able to load all audio files based on edit time", async () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date(0));
