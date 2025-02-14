@@ -694,32 +694,43 @@ export class Device {
 const device = new Device(Symbol._hapticaPrivate);
 
 /**
- * A class for extension key value storage.
- *
- * Do not construct instances of this class, use the `keyValueStorage` property instead.
+ * An interface for key value store.
  */
-export class KeyValueStorage {
-  constructor(key: Symbol) {
-    _hapticaInternalConstructorCheck(key);
-  }
-
+export interface HapticaKeyValueStore {
   /**
    * Returns the value for the specified key or undefined if no value exists.
    */
-  value(key: string) {
-    return _hapticaPrimitives.keyValueStorageValue(key);
-  }
+  value(key: string): string | undefined;
 
   /**
    * Sets the value for the specified key.
    */
-  setValue(key: string, value: string) {
-    _hapticaPrimitives.keyValueStorageSetValue(key, value);
-  }
+  setValue(key: string, value: string): void;
 
   /**
    * Removes the value for the specified key.
    */
+  removeValue(key: string): void;
+}
+
+/**
+ * A class for extension key value storage.
+ *
+ * Do not construct instances of this class, use the `keyValueStorage` property instead.
+ */
+export class KeyValueStorage implements HapticaKeyValueStore {
+  constructor(key: Symbol) {
+    _hapticaInternalConstructorCheck(key);
+  }
+
+  value(key: string) {
+    return _hapticaPrimitives.keyValueStorageValue(key);
+  }
+
+  setValue(key: string, value: string) {
+    _hapticaPrimitives.keyValueStorageSetValue(key, value);
+  }
+
   removeValue(key: string) {
     _hapticaPrimitives.keyValueStorageRemoveValue(key);
   }
@@ -738,28 +749,19 @@ const keyValueStorage = new KeyValueStorage(Symbol._hapticaPrivate);
  *
  * Do not construct instances of this class, use the `secureStorage` property instead.
  */
-export class SecureStorage {
+export class SecureStorage implements HapticaKeyValueStore {
   constructor(key: Symbol) {
     _hapticaInternalConstructorCheck(key);
   }
 
-  /**
-   * Returns the value for the specified key or undefined if no value exists.
-   */
   value(key: string) {
     return _hapticaPrimitives.secureStorageValue(key);
   }
 
-  /**
-   * Sets the value for the specified key.
-   */
   setValue(key: string, value: string) {
     _hapticaPrimitives.secureStorageSetValue(key, value);
   }
 
-  /**
-   * Removes the value for the specified key.
-   */
   removeValue(key: string) {
     _hapticaPrimitives.secureStorageRemoveValue(key);
   }
