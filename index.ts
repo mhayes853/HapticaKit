@@ -1354,7 +1354,7 @@ export class HapticaAudioFileID {
   }
 }
 
-const AVFOUNDATION_MIME_TYPES = {
+const HAPTICA_AVFOUNDATION_MIME_TYPES = {
   mp3: "audio/mpeg",
   aac: "audio/aac",
   m4a: "audio/mp4",
@@ -1368,12 +1368,12 @@ const AVFOUNDATION_MIME_TYPES = {
 /**
  * The supported audio mime types for the app.
  */
-const SUPPORTED_AUDIO_MIME_TYPES = [
-  ...Object.values(AVFOUNDATION_MIME_TYPES),
+const HAPTICA_SUPPORTED_AUDIO_MIME_TYPES = [
+  ...Object.values(HAPTICA_AVFOUNDATION_MIME_TYPES),
   "application/octet-stream",
 ] as const;
 
-export type AudioMIMEType = (typeof SUPPORTED_AUDIO_MIME_TYPES)[number];
+export type AudioMIMEType = (typeof HAPTICA_SUPPORTED_AUDIO_MIME_TYPES)[number];
 
 /**
  * Returns the correct {@link AudioMIMEType} for a specified filename.
@@ -1383,8 +1383,11 @@ export type AudioMIMEType = (typeof SUPPORTED_AUDIO_MIME_TYPES)[number];
  *
  * @param filename The name of the file to get the mime type for.
  */
-const audioMIMEType = (filename: string): AudioMIMEType => {
-  const types = AVFOUNDATION_MIME_TYPES as Record<string, AudioMIMEType>;
+const hapticaAudioMIMEType = (filename: string): AudioMIMEType => {
+  const types = HAPTICA_AVFOUNDATION_MIME_TYPES as Record<
+    string,
+    AudioMIMEType
+  >;
   const extension = filename.split(".").pop()?.toLowerCase();
   return extension && types[extension]
     ? types[extension]
@@ -1470,9 +1473,9 @@ export {
   secureStorage,
   extension,
   audioFilesDirectory,
-  audioMIMEType,
+  hapticaAudioMIMEType,
   HapticaResourceAccessLevel,
-  SUPPORTED_AUDIO_MIME_TYPES,
+  HAPTICA_SUPPORTED_AUDIO_MIME_TYPES,
   AHAP_AUDIO_PARAMETER_IDS,
   AHAP_HAPTIC_PARAMETER_IDS,
   AHAP_DYNAMIC_PARAMETER_IDS,
