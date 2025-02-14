@@ -218,6 +218,21 @@ describe("HapticaKit tests", () => {
   });
 
   describe("AudioFiles tests", () => {
+    it("should not exist by default", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        expect(file.exists(tx)).toEqual(false);
+      });
+    });
+
+    it("should exist after being saved", async () => {
+      await audioFilesDirectory.withTransaction((tx) => {
+        const file = new HapticaAudioFile("coins.caf");
+        file.save(new Uint8Array([0x01, 0x02]), tx);
+        expect(file.exists(tx)).toEqual(true);
+      });
+    });
+
     it("should load audio associated with the pattern", async () => {
       await audioFilesDirectory.withTransaction((tx) => {
         const file = new HapticaAudioFile("coins.caf");

@@ -1386,6 +1386,11 @@ export interface HapticaAudioFile {
   ): HapticaResourceAccessLevel;
 
   /**
+   * Returns true if this file exists in the specified directory.
+   */
+  exists(tx: HapticaAudioFilesDirectoryTransaction): boolean;
+
+  /**
    * Loads the bytes of this file.
    */
   bytes(tx: HapticaAudioFilesDirectoryTransaction): Uint8Array;

@@ -173,6 +173,15 @@ class MockAudioFile {
     return this.#bytes;
   }
 
+  exists(tx) {
+    try {
+      tx.checkFile(this);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   save(data, tx) {
     this.#checkAccessLevel(tx, HapticaResourceAccessLevel.ReadWrite);
     this.#bytes = data;
