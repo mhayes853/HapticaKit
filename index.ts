@@ -1421,7 +1421,7 @@ export interface HapticaAudioFile {
   /**
    * Returns a blob of this file.
    */
-  blob(): Blob;
+  blob(directory: HapticaAudioFilesDirectory): Blob;
 
   /**
    * The access level that this extension has to this audio file within the specified transaction.

@@ -250,7 +250,7 @@ describe("HapticaKit tests", () => {
       await audioFilesDirectory.withTransaction((tx) => {
         file.save(expectedBytes, tx);
       });
-      expect(await file.blob().text()).toEqual("12");
+      expect(await file.blob(audioFilesDirectory).text()).toEqual("12");
     });
 
     it.each([
@@ -268,7 +268,7 @@ describe("HapticaKit tests", () => {
       "should properly get the mime type of the file ($mimeType) for $name",
       ({ name, mimeType }) => {
         const file = new HapticaAudioFile(name);
-        expect(file.blob().type).toEqual(mimeType);
+        expect(file.blob(audioFilesDirectory).type).toEqual(mimeType);
       },
     );
 
