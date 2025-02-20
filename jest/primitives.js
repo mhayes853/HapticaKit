@@ -215,6 +215,7 @@ const isOwnedByExtension = (id) => {
 
 const DEFAULT_PATTERN = {
   name: "",
+  creator: { type: "extension", id: EXTENSION_ID },
   ahapPattern: { Version: 1, Pattern: [] },
 };
 
