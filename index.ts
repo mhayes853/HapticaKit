@@ -12,6 +12,19 @@ const _hapticaInternalConstructorCheck = (key: Symbol) => {
   }
 };
 
+interface HapticaConstructor {
+  new (key: Symbol, ...args: any): any;
+}
+
+const _hapticaConstructPrivate = <V>(constructor: any, ...args: any): V => {
+  return new (constructor as HapticaConstructor)(
+    Symbol._hapticaPrivate,
+    ...args,
+  );
+};
+
+// const _hapticaConstructPrivate = <T extends Class>()
+
 export type HapticaUnsubscribe = () => void;
 
 /**
@@ -194,7 +207,7 @@ export interface HapticaAudioFile {
  * Access to the audio directory for your extension/
  */
 export class HapticaAudioDirectory {
-  constructor(key: Symbol) {
+  private constructor(key: Symbol) {
     _hapticaInternalConstructorCheck(key);
   }
 
@@ -585,7 +598,7 @@ export type HapticaPatternUpdate = {
  * A class for reading and writing {@link HapticaPattern}s from your extension.
  */
 export class HapticaPatterns {
-  constructor(key: Symbol) {
+  private constructor(key: Symbol) {
     _hapticaInternalConstructorCheck(key);
   }
 
@@ -703,7 +716,7 @@ export type HapticaDeviceMetadata = {
  * Do not construct instances of this class, use the `keyValueStorage` property instead.
  */
 export class HapticaKeyValueStore {
-  constructor(
+  private constructor(
     key: Symbol,
     private readonly source: _HapticaKVSSource,
   ) {
@@ -1001,7 +1014,7 @@ const _hapticaSettingValueTypeName = (value: HapticaExtensionSettingsValue) => {
  * the settings for your extension.
  */
 export class HapticaExtensionSettings {
-  constructor(key: Symbol) {
+  private constructor(key: Symbol) {
     _hapticaInternalConstructorCheck(key);
   }
 
@@ -1189,8 +1202,8 @@ export class Haptica {
    * Do not store sensitive data such as passwords or API keys in key value storage. Instead use
    * {@link Haptica.secureStorage} for storing sensitive data.
    */
-  readonly keyValueStorage = new HapticaKeyValueStore(
-    Symbol._hapticaPrivate,
+  readonly keyValueStorage = _hapticaConstructPrivate<HapticaKeyValueStore>(
+    HapticaKeyValueStore,
     "normal",
   );
 
@@ -1200,27 +1213,31 @@ export class Haptica {
    * You can use secure storage to store sensitive data such as passwords or API keys.
    * Non-sensitive data should be stored in {@link Haptica.keyValueStorage}.
    */
-  readonly secureStorage = new HapticaKeyValueStore(
-    Symbol._hapticaPrivate,
+  readonly secureStorage = _hapticaConstructPrivate<HapticaKeyValueStore>(
+    HapticaKeyValueStore,
     "secure",
   );
 
   /**
    * Access to {@link HapticaPattern}s in your extension.
    */
-  readonly patterns = new HapticaPatterns(Symbol._hapticaPrivate);
+  readonly patterns =
+    _hapticaConstructPrivate<HapticaPatterns>(HapticaPatterns);
 
   /**
    * Access to audio files for your extension.
    */
-  readonly audioDirectory = new HapticaAudioDirectory(Symbol._hapticaPrivate);
+  readonly audioDirectory = _hapticaConstructPrivate<HapticaAudioDirectory>(
+    HapticaAudioDirectory,
+  );
 
   /**
    * The settings for your extension.
    */
-  get extensionSettings() {
-    return new HapticaExtensionSettings(Symbol._hapticaPrivate);
-  }
+  readonly extensionSettings =
+    _hapticaConstructPrivate<HapticaExtensionSettings>(
+      HapticaExtensionSettings,
+    );
 
   /**
    * The unique identifier for your extension.
@@ -1250,7 +1267,7 @@ export class Haptica {
     return !!this.extensionManifest;
   }
 
-  constructor(key: Symbol) {
+  private constructor(key: Symbol) {
     _hapticaInternalConstructorCheck(key);
   }
 
@@ -1284,7 +1301,7 @@ export class Haptica {
 /**
  * An object containing core properties to this extension.
  */
-const haptica = new Haptica(Symbol._hapticaPrivate);
+const haptica = _hapticaConstructPrivate<Haptica>(Haptica);
 
 const HAPTICA_AVFOUNDATION_MIME_TYPES = {
   mp3: "audio/mpeg",
