@@ -1,45 +1,83 @@
 import {
   HapticaExtensionID,
   HapticaExtensionSettingsValue,
-  DeviceHapticsHardwareCompatability,
-  HapticaPatternsHandle,
   HapticaExtensionManifest,
-  HapticaExtensionSettingsSchema,
-  HapticaAudioFilesDirectoryTransaction,
-  HapticaAppVersion,
+  HapticaSemanticVersion,
+  HapticaDeviceMetadata,
+  HapticaPatternsQuery,
+  HapticaPattern,
+  HapticaPatternInsert,
+  HapticaPatternUpdate,
+  HapticaPatternID,
+  HapticaAccessPermissionsRequest,
+  HapticaAccessPermissions,
+  HapticaAudioFileCreate,
+  HapticaAudioFile,
+  HapticaAudioFileID,
+  HapticaAudioFileLabel,
+  HapticaAudioFileRename,
+  HapticaAudioFileRenameResult,
 } from "./index";
 
 declare global {
-  const HAPTICA_APP_VERSION: HapticaAppVersion;
+  type _HapticaKVSSource = "normal" | "secure";
 
   interface _HapticaPrimitives {
-    appVersionString(): string;
-    extensionID(): HapticaExtensionID;
-    settingsValue(
-      schema: HapticaExtensionSettingsSchema,
-    ): HapticaExtensionSettingsValue | undefined;
-    setSettingsValue(
-      schema: HapticaExtensionSettingsSchema,
-      value: HapticaExtensionSettingsValue,
+    appVersion: HapticaSemanticVersion;
+    extensionID: HapticaExtensionID;
+    deviceMetadata: HapticaDeviceMetadata;
+
+    extensionManifest: HapticaExtensionManifest | undefined;
+    registerExtensionManifest(manifest: HapticaExtensionManifest): void;
+    unregisterExtensionManifest(): void;
+
+    settingsValue(key: string): HapticaExtensionSettingsValue;
+    settingsHasValue(key: string): boolean;
+    setSettingsValue(key: string, value: HapticaExtensionSettingsValue): void;
+
+    keyValueStorageValue(
+      key: string,
+      storageSource: _HapticaKVSSource,
+    ): string | undefined;
+    keyValueStorageSetValue(
+      key: string,
+      value: string,
+      storageSource: _HapticaKVSSource,
     ): void;
-    settingsResetValues(schemas: HapticaExtensionSettingsSchema[]): void;
-    deviceName(): string;
-    deviceOSVersion(): string;
-    deviceHardwareHapticsCompatability(): DeviceHapticsHardwareCompatability;
-    keyValueStorageValue(key: string): string | undefined;
-    keyValueStorageSetValue(key: string, value: string): void;
-    keyValueStorageRemoveValue(key: string): void;
-    secureStorageValue(key: string): string | undefined;
-    secureStorageSetValue(key: string, value: string): void;
-    secureStorageRemoveValue(key: string): void;
-    patternsWithTransaction<T>(
-      fn: (handle: HapticaPatternsHandle) => T,
-    ): Promise<T>;
-    registerManifest(manifest: HapticaExtensionManifest): void;
-    unregisterManifest(): void;
-    audioDirectoryWithTransaction<T>(
-      fn: (transaction: HapticaAudioFilesDirectoryTransaction) => T,
-    ): Promise<T>;
+    keyValueStorageRemoveValue(
+      key: string,
+      storageSource: _HapticaKVSSource,
+    ): void;
+
+    requestAccessPermissions(
+      request: HapticaAccessPermissionsRequest,
+    ): Promise<Set<HapticaAccessPermissions>>;
+    accessPermissions(): Promise<Set<HapticaAccessPermissions>>;
+
+    patterns(query: HapticaPatternsQuery): Promise<HapticaPattern[]>;
+    patternById(id: HapticaPatternID): Promise<HapticaPattern | undefined>;
+    insertPatterns(
+      inserts: HapticaPatternInsert[],
+    ): Promise<HapticaPatternID[]>;
+    updatePatterns(
+      updates: HapticaPatternUpdate[],
+    ): Promise<HapticaPatternID[]>;
+    deletePatterns(ids: HapticaPatternID[]): Promise<void>;
+
+    audioDirectoryCreateNewFiles(
+      creates: HapticaAudioFileCreate[],
+    ): Promise<HapticaAudioFile[]>;
+    audioDirectoryFilesForIds(
+      ids: HapticaAudioFileID[],
+    ): Promise<(HapticaAudioFile | undefined)[]>;
+    audioDirectoryFilesForLabels(
+      labels: HapticaAudioFileLabel[],
+    ): Promise<(HapticaAudioFile | undefined)[]>;
+    audioDirectoryFiles(): Promise<HapticaAudioFile[]>;
+    audioDirectoryRenameFiles(
+      renames: HapticaAudioFileRename[],
+    ): Promise<HapticaAudioFileRenameResult[]>;
+    audioDirectoryDeleteFilesByIds(ids: HapticaAudioFileID[]): Promise<void>;
   }
 
   const _hapticaPrimitives: _HapticaPrimitives;

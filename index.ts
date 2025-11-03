@@ -12,371 +12,25 @@ const _hapticaInternalConstructorCheck = (key: Symbol) => {
   }
 };
 
-export const _hapticaAHAPJSONParseReviver = (key: string, object: any) => {
-  if (key === "EventWaveformPath") {
-    return HapticaAudioFileID.parse(object) ?? object;
-  }
-  return object;
-};
-
-export const _hapticaAHAPJSONStringifyReplacer = (key: string, object: any) => {
-  if (key === "EventWaveformPath" && typeof object === "string") {
-    return new HapticaAudioFileID(object).toJSON();
-  }
-  return object;
-};
+export type HapticaUnsubscribe = () => void;
 
 /**
  * A data type describing a version of the app.
  *
  * You can get the current app version using the {@link HAPTICA_APP_VERSION} constant.
  */
-export type HapticaAppVersion = {
+export type HapticaSemanticVersion = {
   majorVersion: number;
   minorVersion: number;
   patchVersion: number;
 };
 
 export type HapticaExtensionErrorCode =
-  | "ManifestAlreadyRegistered"
-  | "ManifestNotRegistered"
+  | "ExtensionManifestNotRegistered"
   | "SettingNameNotFound"
   | "InvalidSettingValue"
   | "PatternWithIdNotFound"
-  | "AudioFileNotFound"
-  | "InvalidResourcePermissions";
-
-/**
- * An Error subclass thrown by APIs that serve haptica extensions.
- */
-export class HapticaExtensionError extends Error {
-  /**
-   * The error code associated with this error.
-   */
-  code: HapticaExtensionErrorCode;
-
-  constructor(code: HapticaExtensionErrorCode, message: string) {
-    super(message);
-    this.code = code;
-  }
-
-  /**
-   * Thrown when registering a manifest more than once.
-   */
-  static MANIFEST_ALREADY_REGISTERED = new HapticaExtensionError(
-    "ManifestAlreadyRegistered",
-    "A manifest has already been registered. You cannot register a manifest more than once. If you wish to reset the extension, call `extension.reset`.",
-  );
-
-  /**
-   * Thrown when the manifest has not been registered.
-   */
-  static MANIFEST_NOT_REGISTERED = new HapticaExtensionError(
-    "ManifestNotRegistered",
-    "The manifest has not been registered.",
-  );
-
-  /**
-   * Thrown when attempting to set a value for a non-existent setting name.
-   */
-  static settingNameNotFound(name: string, validNames: string[]) {
-    return new HapticaExtensionError(
-      "SettingNameNotFound",
-      `'${name}' is not a valid setting name. Valid names are ${validNames.join(", ")}.`,
-    );
-  }
-
-  /**
-   * Thrown when attempting to set a wrongly typed value for a setting name.
-   */
-  static invalidSetting(name: string, errorMessage: string) {
-    return new HapticaExtensionError(
-      "InvalidSettingValue",
-      `Invalid value passed for setting ${name}: ${errorMessage}`,
-    );
-  }
-
-  /**
-   * Thrown when attempting to operate on an {@link HapticaPattern} with an ID that does not exist.
-   */
-  static patternWithIdNotFound(id: HapticaPatternID) {
-    return new HapticaExtensionError(
-      "PatternWithIdNotFound",
-      `Pattern with id '${id}' was not found.`,
-    );
-  }
-
-  /**
-   * Thrown when attempting to delete an {@link HapticaAudioFile} that does not exist in the
-   * file system
-   */
-  static audioFileNotFound(name: string) {
-    return new HapticaExtensionError(
-      "AudioFileNotFound",
-      `Audio file named ${name} was not found.`,
-    );
-  }
-
-  /**
-   * Thrown when attempting to modify or delete an {@link HapticaAudioFile} that this extension is
-   * not permitted to modify.
-   */
-  static audioFileInvalidPermissions(
-    name: string,
-    owner: HapticaResourceOwner,
-  ) {
-    if (owner.type === "main-application") {
-      return new HapticaExtensionError(
-        "InvalidResourcePermissions",
-        `Cannot save or delete ${name} from this extension. ${name} is owned by the main application; your extension only has read-only access to the file.`,
-      );
-    }
-    return new HapticaExtensionError(
-      "InvalidResourcePermissions",
-      `Cannot save or delete ${name} from this extension. ${name} is owned by another extension with id ${owner.id}; your extension only has read-only access to the file.`,
-    );
-  }
-
-  /**
-   * Thrown when attempting to modify or delete an {@link HapticaPattern} that this extension is
-   * not permitted to modify.
-   */
-  static hapticPatternInvalidPermissions(
-    name: string,
-    owner: HapticaResourceOwner,
-  ) {
-    if (owner.type === "main-application") {
-      return new HapticaExtensionError(
-        "InvalidResourcePermissions",
-        `Cannot update or delete ${name} from this extension. ${name} is owned by the main application; your extension only has read-only access to the pattern.`,
-      );
-    }
-    return new HapticaExtensionError(
-      "InvalidResourcePermissions",
-      `Cannot update or delete ${name} from this extension. ${name} is owned by another extension with id ${owner.id}; your extension only has read-only access to the pattern.`,
-    );
-  }
-}
-
-/**
- * Parameter ids that can be used for haptic events.
- */
-const AHAP_HAPTIC_PARAMETER_IDS = [
-  "HapticIntensity",
-  "HapticSharpness",
-  "AttackTime",
-  "DecayTime",
-  "ReleaseTime",
-  "Sustained",
-] as const;
-
-/**
- * A parameter id that can be used for haptic events.
- */
-export type AHAPHapticParameterID = (typeof AHAP_HAPTIC_PARAMETER_IDS)[number];
-
-/**
- * Parameter ids that can be used for audio events.
- */
-const AHAP_AUDIO_PARAMETER_IDS = [
-  "AudioVolume",
-  "AudioPan",
-  "AudioPitch",
-  "AudioBrightness",
-] as const;
-
-/**
- * A parameter id that can be used for audio events.
- */
-export type AHAPAudioParameterID = (typeof AHAP_AUDIO_PARAMETER_IDS)[number];
-
-/**
- * A parameter id for an {@link AHAPEvent}.
- */
-export type AHAPEventParameterID = AHAPHapticParameterID | AHAPAudioParameterID;
-
-/**
- * A parameter id with its associated value.
- */
-export type AHAPEventParameter<ID extends AHAPEventParameterID> = {
-  ParameterID: ID;
-  ParameterValue: number;
-};
-
-type AHAPBaseEvent<Event> = Event & { Time: number };
-
-/**
- * A haptic transient event from CoreHaptics.
- */
-export type AHAPHapticTransientEvent = AHAPBaseEvent<{
-  EventType: "HapticTransient";
-  EventDuration?: number;
-  EventParameters: AHAPEventParameter<AHAPHapticParameterID>[];
-}>;
-
-/**
- * A haptic continuous event from CoreHaptics.
- */
-export type AHAPHapticContinuousEvent = AHAPBaseEvent<{
-  EventType: "HapticContinuous";
-  EventParameters: AHAPEventParameter<AHAPHapticParameterID>[];
-  EventDuration: number;
-}>;
-
-export type AHAPWaveformPath = string | HapticaAudioFileID;
-
-/**
- * An audio custom event from CoreHaptics.
- */
-export type AHAPAudioCustomEvent = AHAPBaseEvent<{
-  EventType: "AudioCustom";
-  EventWaveformPath: AHAPWaveformPath;
-  EventDuration?: number;
-  EventWaveformLoopEnabled?: boolean;
-  EventWaveformUseVolumeEnvelope?: boolean;
-  EventParameters: AHAPEventParameter<AHAPAudioParameterID>[];
-}>;
-
-/**
- * An audio continuous event from CoreHaptics.
- */
-export type AHAPAudioContinuousEvent = AHAPBaseEvent<{
-  EventType: "AudioContinuous";
-  EventDuration: number;
-  EventWaveformUseVolumeEnvelope?: boolean;
-  EventParameters: AHAPEventParameter<AHAPAudioParameterID>[];
-}>;
-
-/**
- * A type of haptic event to be played at a specified moment in time.
- */
-export type AHAPEvent =
-  | AHAPHapticTransientEvent
-  | AHAPHapticContinuousEvent
-  | AHAPAudioCustomEvent
-  | AHAPAudioContinuousEvent;
-
-/**
- * All possible paramater ids that can be used with an {@link AHAPParameterCurve}.
- */
-const AHAP_CURVABLE_PARAMETER_IDS = [
-  "HapticIntensityControl",
-  "HapticSharpnessControl",
-  "AudioVolumeControl",
-  "AudioPanControl",
-  "AudioPitchControl",
-  "AudioBrightnessControl",
-] as const;
-
-/**
- * A parameter id for {@link AHAPParameterCurve}s.
- */
-export type AHAPCurvableParameterID =
-  (typeof AHAP_CURVABLE_PARAMETER_IDS)[number];
-
-/**
- * All possible paramater ids that can be used with an {@link AHAPDynamicParameter}.
- */
-const AHAP_DYNAMIC_PARAMETER_IDS = [
-  ...AHAP_CURVABLE_PARAMETER_IDS,
-  "HapticAttackTimeControl",
-  "HapticDecayTimeControl",
-  "HapticReleaseTimeControl",
-  "AudioAttackTimeControl",
-  "AudioDecayTimeControl",
-  "AudioReleaseTimeControl",
-] as const;
-
-/**
- * A parameter id for {@link AHAPDynamicParameter}s.
- */
-export type AHAPDynamicParameterID =
-  (typeof AHAP_DYNAMIC_PARAMETER_IDS)[number];
-
-/**
- * A value that alters the playback of haptic event parameters at a particular time.
- *
- * For interpolation of parameter values over time, see {@link AHAPParameterCurve}.
- */
-export type AHAPDynamicParameter = {
-  ParameterID: AHAPDynamicParameterID;
-  ParameterValue: number;
-  Time: number;
-};
-
-/**
- * A type that controls the change in a haptic parameter value using a key-frame system.
- *
- * For altering parameter values at a particular point see {@link AHAPDynamicParameter}.
- */
-export type AHAPParameterCurve = {
-  ParameterID: AHAPCurvableParameterID;
-  Time: number;
-  ParameterCurveControlPoints: AHAPParameterCurveControlPoint[];
-};
-
-/**
- * A control point for a {@link AHAPParameterCurve}.
- */
-export type AHAPParameterCurveControlPoint = {
-  ParameterValue: number;
-  Time: number;
-};
-
-/**
- * An element in an {@link AHAPPattern}.
- */
-export type AHAPPatternElement =
-  | { Event: AHAPEvent }
-  | { Parameter: AHAPDynamicParameter }
-  | { ParameterCurve: AHAPParameterCurve };
-
-/**
- * A type for a haptic pattern.
- *
- * Haptic patterns are composed of events and parameters. See {@link AHAPEvent},
- * {@link AHAPDynamicParameter}, and {@link AHAPParameterCurve} for more.
- */
-export type AHAPPattern = {
-  Version: 1;
-  Metadata?: Record<string, any>;
-  Pattern: AHAPPatternElement[];
-};
-
-/**
- * A type for describing a device's hardware support for haptics.
- */
-export type DeviceHapticsHardwareCompatability = {
-  /**
-   * Whether or not haptic feedback is supported by the hardware.
-   */
-  isFeedbackSupported: boolean;
-
-  /**
-   * Whether or not the haptics engine can play audio alongside feedback.
-   */
-  isAudioSupported: boolean;
-};
-
-/**
- * A descriptor for the level of access that this extension has for a resource.
- */
-enum HapticaResourceAccessLevel {
-  NoAccess = 0,
-  ReadOnly = 1,
-  ReadWrite = 2,
-}
-
-export type HapticaPatternID = string;
-
-export interface HapticaAudioFileConstructor {
-  /**
-   * Constructs an {@link HapticaAudioFile}.
-   *
-   * @param filename The name or {@link HapticaAudioFileID} of the file.
-   */
-  new (filename: string | HapticaAudioFileID): HapticaAudioFile;
-}
+  | "AccessForbidden";
 
 /**
  * An owner of a resource managed by the app.
@@ -412,146 +66,523 @@ export type HapticaResourceOwner =
 export type HapticaResourceCreator = HapticaResourceOwner | { type: "user" };
 
 /**
- * A haptics pattern.
+ * A union of permission types for a haptica-owned resource.
  */
-export type HapticaPattern = {
+export type HapticaResourcePermissions = "read" | "write" | "delete";
+
+export type HapticaAudioFileID = string;
+
+/**
+ * A union of access permission identifiers for your extension.
+ *
+ * `"read-global"` = Your extension has read-only access to all patterns stored in the app.
+ *
+ * `"read-write-local"` = Your extension has read-write access to a list of patterns that it privately owns.
+ */
+export type HapticaAudioDirectoryAccessPermission =
+  | "read-global"
+  | "read-write-local";
+
+/**
+ * The label of an {@link HapticaAudioFile}.
+ */
+export type HapticaAudioFileLabel = {
   /**
-   * The id of the pattern.
+   * The raw filename of the file.
    */
-  id: HapticaPatternID;
+  filename: string;
 
   /**
-   * A name for the pattern.
-   */
-  name: string;
-
-  /**
-   * The AHAP Pattern data.
-   */
-  ahapPattern: AHAPPattern;
-
-  /**
-   * The creation date of the pattern.
-   */
-  createdAt: Date;
-
-  /**
-   * The time that the pattern was last edited by the user.
-   */
-  lastEditedAt: Date;
-
-  /**
-   * The level of access that this extension has to the resource.
-   */
-  accessLevel: HapticaResourceAccessLevel;
-
-  /**
-   * Whether or not the user created this pattern, or if it was automatically created by an
-   * extension or the main application.
-   */
-  creator: HapticaResourceCreator;
-
-  /**
-   * The owner of the pattern.
+   * The {@link HapticaResourceOwner} of the file.
    */
   owner: HapticaResourceOwner;
 };
 
 /**
- * Properties for creating an {@link HapticaPattern}.
+ * The result of attempting to rename an {@link HapticaAudioFile}.
  */
-export type HapticaPatternCreate = Pick<HapticaPattern, "name" | "ahapPattern">;
+export type HapticaAudioFileRenameResult =
+  | { status: "success"; newLabel: HapticaAudioFileLabel }
+  | { status: "file-already-exists" | "file-not-found" };
 
 /**
- * Properties for saving an {@link HapticaPattern}.
+ * Required fields to rename an {@link HapticaAudioFile}.
  */
-export type HapticaPatternUpdate = Partial<HapticaPatternCreate> & {
-  id: HapticaPatternID;
+export type HapticaAudioFileRename = {
+  /**
+   * The id of the file to rename.
+   */
+  id: HapticaAudioFileID;
+
+  /**
+   * The new name of the file **WITHOUT** the file extension applied.
+   */
+  nameWithoutExtension: string;
 };
 
 /**
- * An interface for fetching, editing, and deleting haptic patterns the have been shared with
- * your extension.
- *
- * You get an instance of this interface by calling `withTransaction` on {@link HapticaPatterns}.
+ * Required fields to create a new {@link HapticaAudioFile}.
  */
-export interface HapticaPatternsHandle {
+export type HapticaAudioFileCreate = {
   /**
-   * Loads the stored patterns of this extension.
-   *
-   * @param predicate A function to filter each pattern.
-   * @returns All the patterns stored by this extension.
+   * The {@link HapticaAudioFileLabel} of the file to create.
    */
-  fetchPatterns(
-    predicate?: (pattern: HapticaPattern) => boolean,
-  ): HapticaPattern[];
+  label: HapticaAudioFileLabel;
 
   /**
-   * Creates and returns a new {@link HapticaPattern}.
-   *
-   * @param pattern An {@link HapticaPatternCreate}.
+   * The initial data of the file to create.
    */
-  create(pattern: HapticaPatternCreate): HapticaPattern;
+  initialData: Blob;
+};
+
+/**
+ * An emitted event when listening for changes on a {@link HapticaAudioFile}.
+ */
+export type HapticaAudioFileChangeEvent = { type: "rename" | "delete" };
+
+/**
+ * An audio file owned by the app.
+ */
+export interface HapticaAudioFile {
+  /**
+   * The id of this file.
+   */
+  id: HapticaAudioFileID;
 
   /**
-   * Saves and returns the updated {@link HapticaPattern}.
-   *
-   * Your extension must be the owner of the pattern, otherwise a permissions error will be thrown.
-   *
-   * @param pattern An {@link HapticaPatternUpdate}.
+   * The label of this file.
    */
-  update(pattern: HapticaPatternUpdate): HapticaPattern;
+  label: HapticaAudioFileLabel;
 
   /**
-   * Deletes the pattern with the specified id.
-   *
-   * Your extension must be the owner of the pattern, otherwise a permissions error will be thrown.
-   *
-   * @param id The id of the pattern to delete.
+   * The set of available permissions that your extension has with this file.
    */
-  deletePattern(id: HapticaPatternID): void;
+  permissions: Set<HapticaResourcePermissions>;
 
   /**
-   * Returns true if a pattern with the specified id is stored.
-   *
-   * @param id The id of the pattern.
+   * The creation date of this file.
    */
-  containsPatternWithId(id: HapticaPatternID): boolean;
+  createdAt: Date;
+
+  /**
+   * The date this file was last modified.
+   */
+  lastModifiedAt: Date;
+
+  /**
+   * Subscribes to changes in this file.
+   *
+   * @param callback A callback function to handle changes.
+   * @returns A function to unsubscribe from changes.
+   */
+  subscribeToChanges(
+    callback: (event: HapticaAudioFileChangeEvent) => void,
+  ): HapticaUnsubscribe;
+
+  /**
+   * This file as a blob.
+   */
+  blob(): Blob;
+
+  /**
+   * Saves the bytes in the specified `blob` to this file.
+   */
+  saveBytes(blob: Blob): Promise<void>;
 }
 
-class _HapticaPatternsHandle implements HapticaPatternsHandle {
-  constructor(private readonly primitiveHandle: HapticaPatternsHandle) {}
-
-  fetchPatterns(
-    predicate?: (pattern: HapticaPattern) => boolean,
-  ): HapticaPattern[] {
-    return this.primitiveHandle.fetchPatterns(predicate);
+/**
+ * Access to the audio directory for your extension/
+ */
+export class HapticaAudioDirectory {
+  constructor(key: Symbol) {
+    _hapticaInternalConstructorCheck(key);
   }
 
-  create(pattern: HapticaPatternCreate): HapticaPattern {
-    return this.primitiveHandle.create(pattern);
+  /**
+   * Creates a new file in this directory.
+   *
+   * @param create {@link HapticaAudioFileCreate}
+   * @returns The created file.
+   */
+  async createNewFile(create: HapticaAudioFileCreate) {
+    return (await this.createNewFiles([create]))[0];
   }
 
-  update(pattern: HapticaPatternUpdate): HapticaPattern {
-    if (!this.containsPatternWithId(pattern.id)) {
-      throw HapticaExtensionError.patternWithIdNotFound(pattern.id);
-    }
-    return this.primitiveHandle.update(pattern);
+  /**
+   * Creates new files in this directory.
+   *
+   * @param creates {@link HapticaAudioFileCreate}
+   * @returns The created files.
+   */
+  async createNewFiles(creates: HapticaAudioFileCreate[]) {
+    return await _hapticaPrimitives.audioDirectoryCreateNewFiles(creates);
   }
 
-  deletePattern(id: HapticaPatternID): void {
-    return this.primitiveHandle.deletePattern(id);
+  /**
+   * Lists all files in this directory.
+   *
+   * @returns The files.
+   */
+  async files() {
+    return await _hapticaPrimitives.audioDirectoryFiles();
   }
 
-  containsPatternWithId(id: HapticaPatternID): boolean {
-    return this.primitiveHandle.containsPatternWithId(id);
+  /**
+   * Gets a file by its ID.
+   *
+   * @param id The ID of the file.
+   * @returns The file.
+   */
+  async fileById(id: HapticaAudioFileID) {
+    return (await this.filesByIds([id]))[0];
+  }
+
+  /**
+   * Gets files by their IDs.
+   *
+   * @param ids The IDs of the files.
+   * @returns The files.
+   */
+  async filesByIds(ids: HapticaAudioFileID[]) {
+    return _hapticaPrimitives.audioDirectoryFilesForIds(ids);
+  }
+
+  /**
+   * Gets a file by its label.
+   *
+   * @param label The label of the file.
+   * @returns The file.
+   */
+  async fileByLabel(label: HapticaAudioFileLabel) {
+    return (await this.filesByLabels([label]))[0];
+  }
+
+  /**
+   * Gets files by their labels.
+   *
+   * @param labels The labels of the files.
+   * @returns The files.
+   */
+  async filesByLabels(labels: HapticaAudioFileLabel[]) {
+    return _hapticaPrimitives.audioDirectoryFilesForLabels(labels);
+  }
+
+  /**
+   * Renames a file.
+   *
+   * @param rename The rename operation.
+   * @returns The renamed file.
+   */
+  async renameFile(rename: HapticaAudioFileRename) {
+    return (await this.renameFiles([rename]))[0];
+  }
+
+  /**
+   * Renames files.
+   *
+   * @param renames The rename operations.
+   * @returns The renamed files.
+   */
+  async renameFiles(renames: HapticaAudioFileRename[]) {
+    return _hapticaPrimitives.audioDirectoryRenameFiles(renames);
+  }
+
+  /**
+   * Deletes a file.
+   *
+   * @param id The id of the file.
+   */
+  async deleteFileById(id: HapticaAudioFileID) {
+    await this.deleteFilesByIds([id]);
+  }
+
+  /**
+   * Deletes files.
+   *
+   * @param ids The ids of the files.
+   */
+  async deleteFilesByIds(ids: HapticaAudioFileID[]) {
+    await _hapticaPrimitives.audioDirectoryDeleteFilesByIds(ids);
   }
 }
 
 /**
- * A class for your extension's haptic pattern storage.
+ * Parameter ids that can be used for haptic events.
+ */
+const HAPTICA_AHAP_HAPTIC_PARAMETER_IDS = [
+  "HapticIntensity",
+  "HapticSharpness",
+  "AttackTime",
+  "DecayTime",
+  "ReleaseTime",
+  "Sustained",
+] as const;
+
+/**
+ * A parameter id that can be used for haptic events.
+ */
+export type HapticaAHAPHapticParameterID =
+  (typeof HAPTICA_AHAP_HAPTIC_PARAMETER_IDS)[number];
+
+/**
+ * Parameter ids that can be used for audio events.
+ */
+const HAPTICA_AHAP_AUDIO_PARAMETER_IDS = [
+  "AudioVolume",
+  "AudioPan",
+  "AudioPitch",
+  "AudioBrightness",
+] as const;
+
+/**
+ * A parameter id that can be used for audio events.
+ */
+export type HapticaAHAPAudioParameterID =
+  (typeof HAPTICA_AHAP_AUDIO_PARAMETER_IDS)[number];
+
+/**
+ * A parameter id for an {@link HapticaAHAPEvent}.
+ */
+export type HapticaAHAPEventParameterID =
+  | HapticaAHAPHapticParameterID
+  | HapticaAHAPAudioParameterID;
+
+/**
+ * A parameter id with its associated value.
+ */
+export type HapticaAHAPEventParameter<ID extends HapticaAHAPEventParameterID> =
+  {
+    ParameterID: ID;
+    ParameterValue: number;
+  };
+
+type HapticaAHAPBaseEvent<Event> = Event & { Time: number };
+
+/**
+ * A haptic transient event from CoreHaptics.
+ */
+export type HapticaAHAPHapticTransientEvent = HapticaAHAPBaseEvent<{
+  EventType: "HapticTransient";
+  EventDuration?: number;
+  EventParameters: HapticaAHAPEventParameter<HapticaAHAPHapticParameterID>[];
+}>;
+
+/**
+ * A haptic continuous event from CoreHaptics.
+ */
+export type HapticaAHAPHapticContinuousEvent = HapticaAHAPBaseEvent<{
+  EventType: "HapticContinuous";
+  EventParameters: HapticaAHAPEventParameter<HapticaAHAPHapticParameterID>[];
+  EventDuration: number;
+}>;
+
+/**
+ * An audio custom event from CoreHaptics.
+ */
+export type HapticaAHAPAudioCustomEvent = HapticaAHAPBaseEvent<{
+  EventType: "AudioCustom";
+  EventWaveformPath: HapticaAudioFileID;
+  EventDuration?: number;
+  EventWaveformLoopEnabled?: boolean;
+  EventWaveformUseVolumeEnvelope?: boolean;
+  EventParameters: HapticaAHAPEventParameter<HapticaAHAPAudioParameterID>[];
+}>;
+
+/**
+ * An audio continuous event from CoreHaptics.
+ */
+export type HapticaAHAPAudioContinuousEvent = HapticaAHAPBaseEvent<{
+  EventType: "AudioContinuous";
+  EventDuration: number;
+  EventWaveformUseVolumeEnvelope?: boolean;
+  EventParameters: HapticaAHAPEventParameter<HapticaAHAPAudioParameterID>[];
+}>;
+
+/**
+ * A type of haptic event to be played at a specified moment in time.
+ */
+export type HapticaAHAPEvent =
+  | HapticaAHAPHapticTransientEvent
+  | HapticaAHAPHapticContinuousEvent
+  | HapticaAHAPAudioCustomEvent
+  | HapticaAHAPAudioContinuousEvent;
+
+/**
+ * All possible paramater ids that can be used with an {@link HapticaAHAPParameterCurve}.
+ */
+const HAPTICA_AHAP_CURVABLE_PARAMETER_IDS = [
+  "HapticIntensityControl",
+  "HapticSharpnessControl",
+  "AudioVolumeControl",
+  "AudioPanControl",
+  "AudioPitchControl",
+  "AudioBrightnessControl",
+] as const;
+
+/**
+ * A parameter id for {@link HapticaAHAPParameterCurve}s.
+ */
+export type AHAPCurvableParameterID =
+  (typeof HAPTICA_AHAP_CURVABLE_PARAMETER_IDS)[number];
+
+/**
+ * All possible paramater ids that can be used with an {@link HapticaAHAPDynamicParameter}.
+ */
+const HAPTICA_AHAP_DYNAMIC_PARAMETER_IDS = [
+  ...HAPTICA_AHAP_CURVABLE_PARAMETER_IDS,
+  "HapticAttackTimeControl",
+  "HapticDecayTimeControl",
+  "HapticReleaseTimeControl",
+  "AudioAttackTimeControl",
+  "AudioDecayTimeControl",
+  "AudioReleaseTimeControl",
+] as const;
+
+/**
+ * A parameter id for {@link HapticaAHAPDynamicParameter}s.
+ */
+export type HapticaAHAPDynamicParameterID =
+  (typeof HAPTICA_AHAP_DYNAMIC_PARAMETER_IDS)[number];
+
+/**
+ * A value that alters the playback of haptic event parameters at a particular time.
  *
- * Do not construct instances of this class. Instead, use the `patterns` property.
+ * For interpolation of parameter values over time, see {@link HapticaAHAPParameterCurve}.
+ */
+export type HapticaAHAPDynamicParameter = {
+  ParameterID: HapticaAHAPDynamicParameterID;
+  ParameterValue: number;
+  Time: number;
+};
+
+/**
+ * A type that controls the change in a haptic parameter value using a key-frame system.
+ *
+ * For altering parameter values at a particular point see {@link HapticaAHAPDynamicParameter}.
+ */
+export type HapticaAHAPParameterCurve = {
+  ParameterID: AHAPCurvableParameterID;
+  Time: number;
+  ParameterCurveControlPoints: HapticaAHAPParameterCurveControlPoint[];
+};
+
+/**
+ * A control point for a {@link HapticaAHAPParameterCurve}.
+ */
+export type HapticaAHAPParameterCurveControlPoint = {
+  ParameterValue: number;
+  Time: number;
+};
+
+/**
+ * An element in an {@link HapticaAHAPPattern}.
+ */
+export type HapticaAHAPPatternElement =
+  | { Event: HapticaAHAPEvent }
+  | { Parameter: HapticaAHAPDynamicParameter }
+  | { ParameterCurve: HapticaAHAPParameterCurve };
+
+/**
+ * A type for a haptic pattern.
+ *
+ * Haptic patterns are composed of events and parameters. See {@link HapticaAHAPEvent},
+ * {@link HapticaAHAPDynamicParameter}, and {@link HapticaAHAPParameterCurve} for more.
+ */
+export type HapticaAHAPPattern = {
+  Version: 1;
+  Metadata?: Record<string, any>;
+  Pattern: HapticaAHAPPatternElement[];
+};
+
+/**
+ * An ID of an {@link HapticaPattern}.
+ *
+ * This is typically a v7 UUID.
+ */
+export type HapticaPatternID = string;
+
+/**
+ * A haptic pattern stored by the app.
+ */
+export type HapticaPattern = {
+  /**
+   * The ID of the haptic pattern.
+   */
+  id: HapticaPatternID;
+
+  /**
+   * The name of the pattern.
+   */
+  name: string;
+
+  /**
+   * The AHAP data of the pattern.
+   */
+  ahapPattern: HapticaAHAPPattern;
+
+  /**
+   * The {@link HapticaResourceOwner} of the pattern.
+   */
+  owner: HapticaResourceOwner;
+
+  /**
+   * The date the pattern was last edited at.
+   */
+  lastEditedAt: Date;
+
+  /**
+   * The date the pattern was created at.
+   */
+  createdAt: Date;
+
+  /**
+   * The {@link HapticaResourcePermissions} that this extension has to interact with the pattern.
+   */
+  permissions: Set<HapticaResourcePermissions>;
+};
+
+/**
+ * A sort descriptor for use in a {@link HapticaPatternsQuery}.
+ */
+export type HapticaPatternsSortDescriptor = {
+  property: "name" | "createdAt" | "lastEditedAt";
+  order: "asc" | "desc";
+};
+
+/**
+ * A type for querying {@link HapticaPattern}s.
+ */
+export type HapticaPatternsQuery = {
+  /**
+   * A predicate to filter patterns.
+   *
+   * @param pattern The pattern to filter.
+   * @returns Whether the pattern matches the filter.
+   */
+  filter?: (pattern: HapticaPattern) => boolean;
+
+  /**
+   * An array of sort descriptors.
+   */
+  sortedBy?: HapticaPatternsSortDescriptor[];
+};
+
+/**
+ * Required fields for creating a new {@link HapticaPattern}.
+ */
+export type HapticaPatternInsert = Pick<HapticaPattern, "name" | "ahapPattern">;
+
+/**
+ * Required fields for updating an existing {@link HapticaPattern}.
+ */
+export type HapticaPatternUpdate = {
+  id: HapticaPatternID;
+  name?: string;
+  ahapPattern?: string;
+};
+
+/**
+ * A class for reading and writing {@link HapticaPattern}s from your extension.
  */
 export class HapticaPatterns {
   constructor(key: Symbol) {
@@ -559,236 +590,151 @@ export class HapticaPatterns {
   }
 
   /**
-   * Runs a transaction with the scope of the specified function.
-   *
-   * Do not escape `handle` from the context of the lambda function, doing so causes undefined behavior.
-   *
-   * The transaction has a timeout of 1 second. Any accesses to the patterns storage after the 1
-   * second mark without starting a new transaction will result in an error being thrown.
-   *
-   * @param fn A function to run with exclusive access to the patterns storage.
-   * @returns Whatever `fn` returns.
+   * Returns an array of patterns for the specified {@link HapticaPatternsQuery}.
    */
-  async withTransaction<T>(fn: (handle: HapticaPatternsHandle) => T) {
-    return await _hapticaPrimitives.patternsWithTransaction((nativeHandle) => {
-      return fn(new _HapticaPatternsHandle(nativeHandle));
-    });
+  async patterns(query: HapticaPatternsQuery) {
+    return await _hapticaPrimitives.patterns(query);
+  }
+
+  /**
+   * Returns an {@link HapticaPattern} for the specified {@link HapticaPatternID} if one exists.
+   */
+  async patternById(id: HapticaPatternID) {
+    return await _hapticaPrimitives.patternById(id);
+  }
+
+  /**
+   * Inserts a new {@link HapticaPattern}.
+   *
+   * @param insert The required fields to insert a new pattern.
+   * @returns The {@link HapticaPatternID} of the inserted pattern.
+   */
+  async insertPattern(insert: HapticaPatternInsert) {
+    return (await this.insertPatterns([insert]))[0];
+  }
+
+  /**
+   * Inserts new {@link HapticaPattern}s.
+   *
+   * @param inserts The required fields to insert new patterns.
+   * @returns The {@link HapticaPatternID}s of the inserted patterns.
+   */
+  async insertPatterns(inserts: HapticaPatternInsert[]) {
+    return await _hapticaPrimitives.insertPatterns(inserts);
+  }
+
+  /**
+   * Updates an existing {@link HapticaPattern}.
+   *
+   * @param update The required fields to update an existing pattern.
+   * @returns The {@link HapticaPatternID} of the updated pattern.
+   */
+  async updatePattern(update: HapticaPatternUpdate) {
+    return (await this.updatePatterns([update]))[0];
+  }
+
+  /**
+   * Updates existing {@link HapticaPattern}s.
+   *
+   * @param updates The required fields to update existing patterns.
+   * @returns The {@link HapticaPatternID}s of the updated patterns.
+   */
+  async updatePatterns(updates: HapticaPatternUpdate[]) {
+    return await _hapticaPrimitives.updatePatterns(updates);
+  }
+
+  /**
+   * Deletes an existing {@link HapticaPattern}.
+   *
+   * @param id The {@link HapticaPatternID} of the pattern to delete.
+   */
+  async deletePatternById(id: HapticaPatternID) {
+    await this.deletePatternByIds([id]);
+  }
+
+  /**
+   * Deletes existing {@link HapticaPattern}s.
+   *
+   * @param ids The {@link HapticaPatternID}s of the patterns to delete.
+   */
+  async deletePatternByIds(ids: HapticaPatternID[]) {
+    await _hapticaPrimitives.deletePatterns(ids);
   }
 }
 
 /**
- * Haptic pattern storage for your extension.
- *
- * Your extension has the ability to save and edit haptic patterns for your users, and your users
- * will know that the patterns are owned by your extension.
- *
- * Your extension can only access or edit haptic patterns that it stores on behalf of users, it
- * *does not* get access to all of the user's haptic patterns.
- *
- * You access your extension's pattern storage by calling `withTransaction`, which gives you an
- * exclusive transaction to load, edit, and save haptic patterns.
- * ```ts
- * await patterns.withTransaction((handle) => {
- *   // No id was specified, this will create a new haptic pattern.
- *   const pattern = handle.save({
- *     name: "My Haptic Pattern",
- *     ahapPattern: ahapPatternData
- *   })
- *   handle.save({
- *     id: pattern.id, // Specifying an ID  will edit the existing pattern.
- *     name: "Updated Haptic Pattern"
- *   })
- *   return handle.fetchPatterns() // Returns all patterns that your extension owns.
- * })
- * ```
+ * A type for describing a device's hardware support for haptics.
  */
-const patterns = new HapticaPatterns(Symbol._hapticaPrivate);
-
-/**
- * A transaction for the audio files directory.
- */
-export interface HapticaAudioFilesDirectoryTransaction {
+export type HapticaDeviceHardwareCapability = {
   /**
-   * Loads all saved {@link HapticaAudioFile}s that this extension has access to.
+   * Whether or not haptic feedback is supported by the hardware.
    */
-  savedFiles(): HapticaAudioFile[];
+  isFeedbackSupported: boolean;
 
   /**
-   * Loads all {@link HapticaAudioFile}s specified as waveform paths in `pattern`.
-   *
-   * @param pattern An {@link AHAPPattern}.
-   * @returns All {@link HapticaAudioFile}s associated with `pattern`.
+   * Whether or not the haptics engine can play audio alongside feedback.
    */
-  savedFilesForPattern(pattern: AHAPPattern): HapticaAudioFile[];
-}
+  isAudioSupported: boolean;
+};
 
 /**
- * A class for managing the extension's stored audio files.
+ * Metadata on the user's device.
  */
-export class HapticaAudioFilesDirectory {
-  constructor(key: Symbol) {
-    _hapticaInternalConstructorCheck(key);
-  }
-
-  /**
-   * Runs a transaction on the audio files directory.
-   *
-   * The transaction has a timeout of 1 second. Any accesses to the directory after the 1 second
-   * mark without starting a new transaction will result in an error being thrown.
-   *
-   * @param fn The function to run the transaction with exclusive access to the audio files directory.
-   * @returns Whatever `fn` returns.
-   */
-  async withTransaction<T>(
-    fn: (transaction: HapticaAudioFilesDirectoryTransaction) => T,
-  ) {
-    return await _hapticaPrimitives.audioDirectoryWithTransaction(fn);
-  }
-}
-
-/**
- * The directory of audio files for your extension.
- *
- * The directory allows you to query {@link HapticaAudioFile}s that have been shared with or
- * created by your extension.
- *
- * Your extension can create, and save audio files in the directory like so:
- * ```ts
- * const file = new HapticaAudioFile("sound.caf", soundBytes)
- * file.save()
- *
- * const files = audioDirectory.files() // Contains the saved file
- * ```
- *
- * Files can be deleted from the directory by calling `delete` on {@link HapticaAudioFile}.
- * ```ts
- * const file = new HapticaAudioFile("sound.caf", soundBytes)
- * file.save()
- * file.delete()
- *
- * const files = audioDirectory.files() // Empty Array
- * ```
- */
-const audioFilesDirectory = new HapticaAudioFilesDirectory(
-  Symbol._hapticaPrivate,
-);
-
-/**
- * A class for retrieving device info.
- *
- * You can access an instance of this class via the `device` property.
- */
-export class Device {
+export type HapticaDeviceMetadata = {
   /**
    * The model name of the user's device.
    */
-  get name() {
-    return _hapticaPrimitives.deviceName();
-  }
+  modelName: string;
 
   /**
    * The os version of the user's device.
    */
-  get osVersion() {
-    return _hapticaPrimitives.deviceOSVersion();
-  }
+  osVersion: HapticaSemanticVersion;
 
   /**
    * The hardware haptic compatability of the user's device.
    */
-  get hapticHardwareCompatability(): DeviceHapticsHardwareCompatability {
-    return _hapticaPrimitives.deviceHardwareHapticsCompatability();
-  }
-
-  constructor(key: Symbol) {
-    _hapticaInternalConstructorCheck(key);
-  }
-}
-
-/**
- * The user's device.
- */
-const device = new Device(Symbol._hapticaPrivate);
-
-/**
- * An interface for key value store.
- */
-export interface HapticaKeyValueStore {
-  /**
-   * Returns the value for the specified key or undefined if no value exists.
-   */
-  value(key: string): string | undefined;
-
-  /**
-   * Sets the value for the specified key.
-   */
-  setValue(key: string, value: string): void;
-
-  /**
-   * Removes the value for the specified key.
-   */
-  removeValue(key: string): void;
-}
+  hapticHardwareCompatability: HapticaDeviceHardwareCapability;
+};
 
 /**
  * A class for extension key value storage.
  *
  * Do not construct instances of this class, use the `keyValueStorage` property instead.
  */
-export class KeyValueStorage implements HapticaKeyValueStore {
-  constructor(key: Symbol) {
+export class HapticaKeyValueStore {
+  constructor(
+    key: Symbol,
+    private readonly source: _HapticaKVSSource,
+  ) {
     _hapticaInternalConstructorCheck(key);
   }
 
+  /**
+   * Returns the value for the specified key or undefined if no value exists.
+   */
   value(key: string) {
-    return _hapticaPrimitives.keyValueStorageValue(key);
+    return _hapticaPrimitives.keyValueStorageValue(key, this.source);
   }
 
+  /**
+   * Sets the value for the specified key.
+   */
   setValue(key: string, value: string) {
-    _hapticaPrimitives.keyValueStorageSetValue(key, value);
+    _hapticaPrimitives.keyValueStorageSetValue(key, value, this.source);
   }
 
+  /**
+   * Removes the value for the specified key.
+   */
   removeValue(key: string) {
-    _hapticaPrimitives.keyValueStorageRemoveValue(key);
+    _hapticaPrimitives.keyValueStorageRemoveValue(key, this.source);
   }
 }
 
 /**
- * Key Value storage for your extension.
- *
- * The storage is unencrypted, and you should not use it to store sensitive values. If you need
- * encryption to store sensitive values, use `secureStorage` instead.
+ * An appropriate value to use for a settings schema.
  */
-const keyValueStorage = new KeyValueStorage(Symbol._hapticaPrivate);
-
-/**
- * A class for encrypted key value storage.
- *
- * Do not construct instances of this class, use the `secureStorage` property instead.
- */
-export class SecureStorage implements HapticaKeyValueStore {
-  constructor(key: Symbol) {
-    _hapticaInternalConstructorCheck(key);
-  }
-
-  value(key: string) {
-    return _hapticaPrimitives.secureStorageValue(key);
-  }
-
-  setValue(key: string, value: string) {
-    _hapticaPrimitives.secureStorageSetValue(key, value);
-  }
-
-  removeValue(key: string) {
-    _hapticaPrimitives.secureStorageRemoveValue(key);
-  }
-}
-
-/**
- * Secure key value storage for your extension that uses the keychain to store sensitive values.
- */
-const secureStorage = new SecureStorage(Symbol._hapticaPrivate);
-
 export type HapticaExtensionSettingsValue = string | number | boolean | Date;
 
 /**
@@ -821,7 +767,7 @@ export type HapticaExtensionSettingsValidationResult =
  * Attributes affect how the app treats the setting value. For instance, the `"secure"` attribute
  * will ensure that the setting value is persisted in secure storage (ie. Keychain).
  */
-export type HapticaSettingAttribute = { type: "secure" };
+export type HapticaSettingAttribute = "secure";
 
 type BaseSettingsSchema<Value extends HapticaExtensionSettingsValue> = {
   /**
@@ -1055,10 +1001,7 @@ const _hapticaSettingValueTypeName = (value: HapticaExtensionSettingsValue) => {
  * the settings for your extension.
  */
 export class HapticaExtensionSettings {
-  constructor(
-    readonly schemas: HapticaExtensionSettingsSchema[],
-    key: Symbol,
-  ) {
+  constructor(key: Symbol) {
     _hapticaInternalConstructorCheck(key);
   }
 
@@ -1069,10 +1012,7 @@ export class HapticaExtensionSettings {
    * @returns The value for the settings name.
    */
   value(settingName: string): HapticaExtensionSettingsValue {
-    const schema = this.checkSettingName(settingName);
-    const nativeValue = _hapticaPrimitives.settingsValue(schema);
-    if (nativeValue !== undefined) return nativeValue;
-    return schema.defaultValue;
+    return _hapticaPrimitives.settingsValue(settingName);
   }
 
   /**
@@ -1082,8 +1022,7 @@ export class HapticaExtensionSettings {
    * @param value The value to set for the setting.
    */
   setValue(settingName: string, value: HapticaExtensionSettingsValue) {
-    const schema = this.checkSettingName(settingName);
-    _hapticaPrimitives.setSettingsValue(schema, value);
+    _hapticaPrimitives.setSettingsValue(settingName, value);
   }
 
   /**
@@ -1091,32 +1030,8 @@ export class HapticaExtensionSettings {
    *
    * @param settingName A setting name.
    */
-  has(settingName: string) {
-    return !!this.schemas.find((s) => s.key === settingName);
-  }
-
-  /**
-   * Resets all settings to their default values.
-   *
-   * @param Specific keys or keys to reset. By default, all keys are reset.
-   */
-  reset(keys?: string | string[]) {
-    const schemas =
-      typeof keys === "undefined"
-        ? this.schemas
-        : typeof keys === "string"
-          ? this.schemas.filter((s) => s.key === keys)
-          : this.schemas.filter((s) => keys.includes(s.key));
-    _hapticaPrimitives.settingsResetValues(schemas);
-  }
-
-  private checkSettingName(name: string) {
-    const schema = this.schemas.find((s) => s.key === name);
-    if (schema) return schema;
-    throw HapticaExtensionError.settingNameNotFound(
-      name,
-      this.schemas.map((s) => s.key),
-    );
+  has(settingName: string): boolean {
+    return _hapticaPrimitives.settingsHasValue(settingName);
   }
 }
 
@@ -1192,83 +1107,147 @@ export type HapticaExtensionManifest = {
   onExtensionDisabled?: () => Promise<void>;
 
   /**
-   * A callback the runs when the user shares a haptic pattern with your extension.
+   * A callback the runs when the user shares a haptic patterns with your extension.
    *
-   * @param pattern An {@link HapticaPattern}.
+   * @param patterns An array of {@link HapticaPattern}s.
    */
-  onPatternShared?: (pattern: HapticaPattern) => Promise<void>;
+  onPatternsShared?: (patterns: HapticaPattern[]) => Promise<void>;
 
   /**
-   * A callback that runs whenever the user has updated a haptic pattern.
+   * A callback that runs whenever haptic patterns have been updated.
    *
    * The update will have already been applied to the persisted location of the pattern when this
    * callback is invoked.
    *
-   * The user must have previously shared the haptic pattern with your extension, or this extension
-   * must be the owner of the haptic pattern in order for this callback to be invoked.
+   * Your extension must have read access to the patterns in order for this callback to be invoked.
    *
-   * @param pattern
+   * @param patterns An array of {@link HapticaPattern}s.
    */
-  onPatternUpdated?: (pattern: HapticaPattern) => Promise<void>;
+  onPatternsUpdated?: (patterns: HapticaPattern[]) => Promise<void>;
 
   /**
-   * A callback that runs whenever the user has deleted a haptic pattern.
+   * A callback that runs whenever haptic patterns have been deleted.
    *
-   * The pattern will have already been deleted from storage when this callback is invoked.
+   * The deletion will have already been applied to the persisted location of the patterns when this
+   * callback is invoked.
    *
-   * The user must have previously shared the haptic pattern with your extension, or this extension
-   * must be the owner of the haptic pattern in order for this callback to be invoked.
+   * Your extension must have read access to the patterns in order for this callback to be invoked.
    *
-   * @param pattern An {@link HapticaPattern}.
+   * @param patterns An array of {@link HapticaPattern}s.
    */
-  onPatternDeleted?: (pattern: HapticaPattern) => Promise<void>;
+  onPatternsDeleted?: (patterns: HapticaPattern[]) => Promise<void>;
 };
 
 /**
- * A class representing a Haptica Extension.
+ * A union of access permission identifiers for your extension.
  *
- * You do not construct instances of this class. Instead, use the global {@link extension} instance.
+ * `"read-global-patterns"` = Your extension has read-only access to all patterns stored in the app.
+ *
+ * `"read-global-audio"` = Your extension has read-only access to all audio files stored in the app.
+ *
+ * `"read-write-local-patterns"` = Your extension has read-write access to a list of patterns that it privately owns.
+ *
+ * `"read-write-local-audio"` = Your extension has read-write access to a list of audio files that it privately owns.
  */
-export class HapticaExtension {
-  private _manifest?: HapticaExtensionManifest;
-  private _settings?: HapticaExtensionSettings;
+export type HapticaAccessPermissions =
+  | "read-global-patterns"
+  | "read-global-audio"
+  | "read-write-local-patterns"
+  | "read-write-local-audio";
+
+/**
+ * A request to ask for permissions to access app resources from your extension.
+ */
+export type HapticaAccessPermissionsRequest = {
+  /**
+   * The reason that your extension needs access to {@link HapticaPattern}s.
+   */
+  patternsAccessReason?: string;
 
   /**
-   * The unique identifier for this extension.
+   * The reason that your extension needs access to {@link HapticaAudioFile}s.
    */
-  get id(): HapticaExtensionID {
-    return _hapticaPrimitives.extensionID();
+  audioAccessReason?: string;
+};
+
+/**
+ * A class representing Haptica in your extension.
+ *
+ * You do not construct instances of this class. Instead, use the global {@link haptica} instance.
+ */
+export class Haptica {
+  /**
+   * The {@link HapticaDeviceMetadata} of the device running your extension.
+   */
+  get deviceMetadata() {
+    return _hapticaPrimitives.deviceMetadata;
   }
 
   /**
-   * The {@link HapticaResourceOwner} value for this extension.
+   * Key Value Storage for your extension.
+   *
+   * Do not store sensitive data such as passwords or API keys in key value storage. Instead use
+   * {@link Haptica.secureStorage} for storing sensitive data.
    */
-  get owner(): HapticaResourceOwner {
-    return { type: "extension", id: this.id };
+  readonly keyValueStorage = new HapticaKeyValueStore(
+    Symbol._hapticaPrivate,
+    "normal",
+  );
+
+  /**
+   * Secure Key Value Storage for your extension.
+   *
+   * You can use secure storage to store sensitive data such as passwords or API keys.
+   * Non-sensitive data should be stored in {@link Haptica.keyValueStorage}.
+   */
+  readonly secureStorage = new HapticaKeyValueStore(
+    Symbol._hapticaPrivate,
+    "secure",
+  );
+
+  /**
+   * Access to {@link HapticaPattern}s in your extension.
+   */
+  readonly patterns = new HapticaPatterns(Symbol._hapticaPrivate);
+
+  /**
+   * Access to audio files for your extension.
+   */
+  readonly audioDirectory = new HapticaAudioDirectory(Symbol._hapticaPrivate);
+
+  /**
+   * The settings for your extension.
+   */
+  get extensionSettings() {
+    return new HapticaExtensionSettings(Symbol._hapticaPrivate);
   }
 
   /**
-   * The registered {@link HapticaExtensionManifest}, if `registerManifest` has been called.
+   * The unique identifier for your extension.
    */
-  get manifest() {
-    return this._manifest;
+  get extensionId(): HapticaExtensionID {
+    return _hapticaPrimitives.extensionID;
   }
 
   /**
-   * The {@link HapticaExtensionSettings} for your extension.
+   * The {@link HapticaResourceOwner} value for your extension.
    */
-  get settings() {
-    if (!this._settings) {
-      throw HapticaExtensionError.MANIFEST_NOT_REGISTERED;
-    }
-    return this._settings;
+  get extensionResourceOwner(): HapticaResourceOwner {
+    return { type: "extension", id: this.extensionId };
+  }
+
+  /**
+   * The registered {@link HapticaExtensionManifest}, if `registerExtensionManifest` has been called.
+   */
+  get extensionManifest() {
+    return _hapticaPrimitives.extensionManifest;
   }
 
   /**
    * True if an {@link HapticaExtensionManifest} has been registered.
    */
-  get isManifestRegistered() {
-    return !!this.manifest;
+  get isExtensionManifestRegistered() {
+    return !!this.extensionManifest;
   }
 
   constructor(key: Symbol) {
@@ -1278,98 +1257,34 @@ export class HapticaExtension {
   /**
    * Registers the manifest for this extension.
    *
-   * A manifest can only be registered once. If you attempt to register a manifest twice, then
-   * {@link HapticaExtensionError.MANIFEST_ALREADY_REGISTERED} will be thrown.
-   *
-   * If you wish to replace the manifest, you can call `reset` to unregister the current
-   * manifest, and then you can register the new manifest by calling this method again.
-   *
    * @param manifest See {@link HapticaExtensionManifest}.
    */
-  registerManifest(manifest: HapticaExtensionManifest) {
-    if (this.isManifestRegistered) {
-      throw HapticaExtensionError.MANIFEST_ALREADY_REGISTERED;
-    }
-    _hapticaPrimitives.registerManifest(manifest);
-    this._manifest = manifest;
-    this._settings = new HapticaExtensionSettings(
-      manifest.settingsSchemas ?? [],
-      Symbol._hapticaPrivate,
-    );
+  registerExtensionManifest(manifest: HapticaExtensionManifest) {
+    _hapticaPrimitives.registerExtensionManifest(manifest);
   }
 
   /**
-   * Resets this extension.
+   * Requests permission to access resources from the app.
+   *
+   * @param request An {@link HapticaAccessPermissionsRequest}.
+   * @returns A set of granted permissions.
    */
-  reset() {
-    _hapticaPrimitives.unregisterManifest();
-    this._manifest = undefined;
-    this._settings?.reset();
+  async requestAccessPermissions(request: HapticaAccessPermissionsRequest) {
+    return _hapticaPrimitives.requestAccessPermissions(request);
+  }
+
+  /**
+   * Returns the set of granted permissions to your extension.
+   */
+  async accessPermissions() {
+    return _hapticaPrimitives.accessPermissions();
   }
 }
 
 /**
  * An object containing core properties to this extension.
  */
-const extension = new HapticaExtension(Symbol._hapticaPrivate);
-
-/**
- * An identifier for an {@link HapticaAudioFile}.
- *
- * Audio files are identified by both their name and owner. 2 separate owners can have a file
- * with the same name, but the file names belonging to each owner must be unique. In other words,
- * if extension A has a file named "foo.caf", then extension B can also have a file named
- * "foo.caf". However, extension A or B cannot have a second file named "foo.caf".
- *
- * This class implements `toJSON`, so you can safely serialize it as a part of an AHAP-compatible
- * JSON pattern.
- */
-export class HapticaAudioFileID {
-  constructor(
-    readonly name: string,
-    readonly owner: HapticaResourceOwner = extension.owner,
-  ) {}
-
-  static __HAPTICA_UUID_V7_REGEX =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-  /**
-   * Attempts to parse a {@link HapticaAudioFileID} from a string.
-   *
-   * The string must be in the same format that `toString` and `toJSON` return.
-   *
-   * @param str The string to parse.
-   * @returns A {@link HapticaAudioFileID} if successful, `undefined` otherwise.
-   */
-  static parse(str: string): HapticaAudioFileID | undefined {
-    const splits = str.toString().split("|", 2);
-    if (splits.length < 2) return undefined;
-    if (splits[0] == "main-application") {
-      return new HapticaAudioFileID(splits[1], { type: "main-application" });
-    }
-    const extensionPrefix = "extension-";
-    if (!splits[0].startsWith(extensionPrefix)) return undefined;
-    const uuid = splits[0].substring(extensionPrefix.length);
-    return HapticaAudioFileID.__HAPTICA_UUID_V7_REGEX.test(uuid)
-      ? new HapticaAudioFileID(splits[1], { type: "extension", id: uuid })
-      : undefined;
-  }
-
-  toString() {
-    return this.toJSON();
-  }
-
-  toJSON() {
-    return `${this.ownerString()}|${this.name}`;
-  }
-
-  private ownerString() {
-    if (this.owner.type === "main-application") {
-      return this.owner.type;
-    }
-    return `${this.owner.type}-${this.owner.id}`;
-  }
-}
+const haptica = new Haptica(Symbol._hapticaPrivate);
 
 const HAPTICA_AVFOUNDATION_MIME_TYPES = {
   mp3: "audio/mpeg",
@@ -1390,111 +1305,17 @@ const HAPTICA_SUPPORTED_AUDIO_MIME_TYPES = [
   "application/octet-stream",
 ] as const;
 
-export type AudioMIMEType = (typeof HAPTICA_SUPPORTED_AUDIO_MIME_TYPES)[number];
-
 /**
- * Returns the correct {@link AudioMIMEType} for a specified filename.
- *
- * If the filename does not specify a valid audio format that's supported by the app, then
- * `"application/octet-stream"` is returned.
- *
- * @param filename The name of the file to get the mime type for.
+ * A union of mime types that Haptica supports.
  */
-const hapticaAudioMIMEType = (filename: string): AudioMIMEType => {
-  const types = HAPTICA_AVFOUNDATION_MIME_TYPES as Record<
-    string,
-    AudioMIMEType
-  >;
-  const extension = filename.split(".").pop()?.toLowerCase();
-  return extension && types[extension]
-    ? types[extension]
-    : "application/octet-stream";
-};
-
-export interface HapticaAudioFile {
-  /**
-   * The {@link HapticaAudioFileID} for this file.
-   */
-  get id(): HapticaAudioFileID;
-
-  /**
-   * The filename of this file.
-   */
-  get filename(): string;
-
-  /**
-   * The owner this audio file.
-   *
-   * If the owner type is `"main"`, then this file is owned by the main application.
-   * If the owner type is `"extension"`, then this file is owned by an extension.
-   *
-   * The owner type must be `"extension"` and the corresponding `id` field must be equal to this
-   * extension's ID if you want to call `save` or `delete`. Files that are not owned by this
-   * extension are read-only, and cannot be saved or deleted. Calling `save` or `delete` on a file
-   * this this extension does not own will result in a permissions error being thrown.
-   */
-  get owner(): HapticaResourceOwner;
-
-  /**
-   * Returns a blob of this file.
-   */
-  blob(directory: HapticaAudioFilesDirectory): Blob;
-
-  /**
-   * The access level that this extension has to this audio file within the specified transaction.
-   *
-   * You can use this access level to determine what operations you can perform on this file.
-   */
-  accessLevel(
-    tx: HapticaAudioFilesDirectoryTransaction,
-  ): HapticaResourceAccessLevel;
-
-  /**
-   * Returns true if this file exists in the specified directory.
-   */
-  exists(tx: HapticaAudioFilesDirectoryTransaction): boolean;
-
-  /**
-   * Loads the bytes of this file.
-   */
-  bytes(tx: HapticaAudioFilesDirectoryTransaction): Uint8Array;
-
-  /**
-   * Saves this audio file.
-   *
-   * If this audio file does not belong to this extension, then this method will throw a
-   * permissions error.
-   */
-  save(data: Uint8Array, tx: HapticaAudioFilesDirectoryTransaction): void;
-
-  /**
-   * Deletes this audio file.
-   *
-   * If this audio file does not belong to this extension, then this method will throw a
-   * permissions error.
-   */
-  delete(tx: HapticaAudioFilesDirectoryTransaction): void;
-}
-
-declare global {
-  /**
-   * An audio file from the app.
-   */
-  var HapticaAudioFile: HapticaAudioFileConstructor;
-}
+export type HapticaAudioMIMEType =
+  (typeof HAPTICA_SUPPORTED_AUDIO_MIME_TYPES)[number];
 
 export {
-  device,
-  patterns,
-  keyValueStorage,
-  secureStorage,
-  extension,
-  audioFilesDirectory,
-  hapticaAudioMIMEType,
-  HapticaResourceAccessLevel,
+  haptica,
   HAPTICA_SUPPORTED_AUDIO_MIME_TYPES,
-  AHAP_AUDIO_PARAMETER_IDS,
-  AHAP_HAPTIC_PARAMETER_IDS,
-  AHAP_DYNAMIC_PARAMETER_IDS,
-  AHAP_CURVABLE_PARAMETER_IDS,
+  HAPTICA_AHAP_AUDIO_PARAMETER_IDS,
+  HAPTICA_AHAP_HAPTIC_PARAMETER_IDS,
+  HAPTICA_AHAP_DYNAMIC_PARAMETER_IDS,
+  HAPTICA_AHAP_CURVABLE_PARAMETER_IDS,
 };
