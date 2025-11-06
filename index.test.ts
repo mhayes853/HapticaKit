@@ -1,5 +1,4 @@
 import {
-  haptica,
   HapticaExtensionSettingsSchema,
   HapticaExtensionSettingsValue,
   hapticaValidateSetting,

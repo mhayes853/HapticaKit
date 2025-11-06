@@ -9,14 +9,14 @@ import {
   HapticaPatternInsert,
   HapticaPatternUpdate,
   HapticaPatternID,
-  HapticaAccessPermissionsRequest,
-  HapticaAccessPermissions,
+  HapticaAuthorizationRequest,
   HapticaAudioFileCreate,
   HapticaAudioFile,
   HapticaAudioFileID,
   HapticaAudioFileLabel,
   HapticaAudioFileRename,
   HapticaAudioFileRenameResult,
+  HapticaAuthorizationStatus,
 } from "./index";
 
 declare global {
@@ -49,10 +49,10 @@ declare global {
       storageSource: _HapticaKVSSource,
     ): void;
 
-    requestAccessPermissions(
-      request: HapticaAccessPermissionsRequest,
-    ): Promise<Set<HapticaAccessPermissions>>;
-    accessPermissions(): Promise<Set<HapticaAccessPermissions>>;
+    requestAuthorization(
+      request: HapticaAuthorizationRequest,
+    ): Promise<HapticaAuthorizationStatus>;
+    authorizationStatus(): Promise<HapticaAuthorizationStatus>;
 
     patterns(query: HapticaPatternsQuery): Promise<HapticaPattern[]>;
     patternById(id: HapticaPatternID): Promise<HapticaPattern | undefined>;
