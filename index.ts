@@ -257,7 +257,7 @@ export class HapticaAudioDirectory {
    * @returns The files.
    */
   async filesByIds(ids: HapticaAudioFileID[]) {
-    return _hapticaPrimitives.audioDirectoryFilesForIds(ids);
+    return await _hapticaPrimitives.audioDirectoryFilesForIds(ids);
   }
 
   /**
@@ -277,7 +277,7 @@ export class HapticaAudioDirectory {
    * @returns The files.
    */
   async filesByLabels(labels: HapticaAudioFileLabel[]) {
-    return _hapticaPrimitives.audioDirectoryFilesForLabels(labels);
+    return await _hapticaPrimitives.audioDirectoryFilesForLabels(labels);
   }
 
   /**
@@ -297,7 +297,7 @@ export class HapticaAudioDirectory {
    * @returns The renamed files.
    */
   async renameFiles(renames: HapticaAudioFileRename[]) {
-    return _hapticaPrimitives.audioDirectoryRenameFiles(renames);
+    return await _hapticaPrimitives.audioDirectoryRenameFiles(renames);
   }
 
   /**
@@ -726,22 +726,22 @@ export class HapticaKeyValueStore {
   /**
    * Returns the value for the specified key or undefined if no value exists.
    */
-  value(key: string) {
-    return _hapticaPrimitives.keyValueStorageValue(key, this.source);
+  async value(key: string) {
+    return await _hapticaPrimitives.keyValueStorageValue(key, this.source);
   }
 
   /**
    * Sets the value for the specified key.
    */
-  setValue(key: string, value: string) {
-    _hapticaPrimitives.keyValueStorageSetValue(key, value, this.source);
+  async setValue(key: string, value: string) {
+    await _hapticaPrimitives.keyValueStorageSetValue(key, value, this.source);
   }
 
   /**
    * Removes the value for the specified key.
    */
-  removeValue(key: string) {
-    _hapticaPrimitives.keyValueStorageRemoveValue(key, this.source);
+  async removeValue(key: string) {
+    await _hapticaPrimitives.keyValueStorageRemoveValue(key, this.source);
   }
 }
 
@@ -1024,8 +1024,8 @@ export class HapticaExtensionSettings {
    * @param settingName The settings name that was used in the `settingsSchemas` of your extension's manifest.
    * @returns The value for the settings name.
    */
-  value(settingName: string): HapticaExtensionSettingsValue {
-    return _hapticaPrimitives.settingsValue(settingName);
+  async value(settingName: string) {
+    return await _hapticaPrimitives.settingsValue(settingName);
   }
 
   /**
@@ -1034,8 +1034,8 @@ export class HapticaExtensionSettings {
    * @param settingName The settings name that was used in the `settingsSchemas` of your extension's manifest.
    * @param value The value to set for the setting.
    */
-  setValue(settingName: string, value: HapticaExtensionSettingsValue) {
-    _hapticaPrimitives.setSettingsValue(settingName, value);
+  async setValue(settingName: string, value: HapticaExtensionSettingsValue) {
+    await _hapticaPrimitives.setSettingsValue(settingName, value);
   }
 
   /**
@@ -1043,8 +1043,8 @@ export class HapticaExtensionSettings {
    *
    * @param settingName A setting name.
    */
-  has(settingName: string): boolean {
-    return _hapticaPrimitives.settingsHasValue(settingName);
+  async has(settingName: string) {
+    return await _hapticaPrimitives.settingsHasValue(settingName);
   }
 }
 

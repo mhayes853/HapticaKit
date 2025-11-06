@@ -29,25 +29,27 @@ declare global {
 
     extensionManifest: HapticaExtensionManifest | undefined;
     registerExtensionManifest(manifest: HapticaExtensionManifest): void;
-    unregisterExtensionManifest(): void;
 
-    settingsValue(key: string): HapticaExtensionSettingsValue;
-    settingsHasValue(key: string): boolean;
-    setSettingsValue(key: string, value: HapticaExtensionSettingsValue): void;
+    settingsValue(key: string): Promise<HapticaExtensionSettingsValue>;
+    settingsHasValue(key: string): Promise<boolean>;
+    setSettingsValue(
+      key: string,
+      value: HapticaExtensionSettingsValue,
+    ): Promise<void>;
 
     keyValueStorageValue(
       key: string,
       storageSource: _HapticaKVSSource,
-    ): string | undefined;
+    ): Promise<string | undefined>;
     keyValueStorageSetValue(
       key: string,
       value: string,
       storageSource: _HapticaKVSSource,
-    ): void;
+    ): Promise<void>;
     keyValueStorageRemoveValue(
       key: string,
       storageSource: _HapticaKVSSource,
-    ): void;
+    ): Promise<void>;
 
     requestAuthorization(
       request: HapticaAuthorizationRequest,
