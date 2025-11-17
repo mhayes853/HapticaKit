@@ -51,9 +51,7 @@ declare global {
       storageSource: _HapticaKVSSource,
     ): Promise<void>;
 
-    requestAuthorization(
-      request: HapticaAuthorizationRequest,
-    ): Promise<HapticaAuthorizationStatus>;
+    requestAuthorization(): Promise<HapticaAuthorizationStatus>;
     authorizationStatus(): Promise<HapticaAuthorizationStatus>;
 
     patterns(query: HapticaPatternsQuery): Promise<HapticaPattern[]>;

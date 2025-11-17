@@ -1086,6 +1086,23 @@ export type HapticaExtensionManifest = {
   settingsSchemas?: HapticaExtensionSettingsSchema[];
 
   /**
+   * An object containing reasons for requesting access to app resources.
+   *
+   * If a field is undefined, then no access will be requested for the corresponding resource.
+   */
+  authorization?: {
+    /**
+     * The reason that your extension needs access to {@link HapticaPattern}s.
+     */
+    patternsAuthorizationReason?: string;
+
+    /**
+     * The reason that your extension needs access to {@link HapticaAudioFile}s.
+     */
+    audioAuthorizationReason?: string;
+  };
+
+  /**
    * A callback the runs whenever the user changes your extension's settings.
    *
    * The updated settings will have already been applied to the settings storage when this callback
@@ -1152,59 +1169,47 @@ export type HapticaExtensionManifest = {
 };
 
 /**
- * An authorization status for audio access.
- *
- * `"read-global"` = Your extension has read-only access to all audio files stored in the app.
- *
- * `"read-write-local"` = Your extension has read-write access to a list of audio files that it privately owns.
+ * An authorization status for an app resource.
  */
-export type HapticaAudioAuthorizationStatus =
-  | "read-global"
-  | "read-write-local";
+export type HapticaResourceAuthorizationStatus = {
+  /**
+   * Access to the global instances of the resource.
+   *
+   * `"read-all"` = Your extension can read all instances of the resource that the app owns.
+   *
+   * `"read-shared"` = Your extension can read instances of the resource that the user explicitly shares with you.
+   *
+   * `"denied"` = Your extension does not have access to the resource.
+   */
+  global: "read-all" | "read-shared" | "denied";
 
-/**
- * An authorization status for partterns access.
- *
- * `"read-global"` = Your extension has read-only access to all haptic patterns stored in the app.
- *
- * `"read-write-local"` = Your extension has read-write access to a list of haptic patterns that it privately owns.
- */
-export type HapticaPatternsAuthorizationStatus =
-  | "read-global"
-  | "read-write-local";
+  /**
+   * Access to the local extension-owned instances of the resource.
+   *
+   * `"read-write"` = Your extension can read and write to a local pool of instances it owns.
+   *
+   * `"denied"` = Your extension does not have access to the resource.
+   */
+  local: "read-write" | "denied";
+};
 
 /**
  * The authorization status for various resources that your extension has access to.
  */
 export type HapticaAuthorizationStatus = {
   /**
-   * A set of {@link HapticaPatternsAuthorizationStatus}es.
+   * The authorization status for patterns.
    *
    * A value of `undefined` means that authorization has not yet been requested.
    */
-  patterns?: Set<HapticaPatternsAuthorizationStatus>;
+  patterns?: HapticaResourceAuthorizationStatus;
 
   /**
-   * A set of {@link HapticaAudioAuthorizationStatus}es.
+   * The authorization status for audio.
    *
    * A value of `undefined` means that authorization has not yet been requested.
    */
-  audio?: Set<HapticaAudioAuthorizationStatus>;
-};
-
-/**
- * A request to ask for permissions to access app resources from your extension.
- */
-export type HapticaAuthorizationRequest = {
-  /**
-   * The reason that your extension needs access to {@link HapticaPattern}s.
-   */
-  patternsAuthorizationReason?: string;
-
-  /**
-   * The reason that your extension needs access to {@link HapticaAudioFile}s.
-   */
-  audioAuthorizationReason?: string;
+  audio?: HapticaResourceAuthorizationStatus;
 };
 
 /**
@@ -1310,8 +1315,8 @@ export class Haptica {
    * @param request An {@link HapticaAuthorizationRequest}.
    * @returns A set of granted permissions.
    */
-  async requestAuthorization(request: HapticaAuthorizationRequest) {
-    return _hapticaPrimitives.requestAuthorization(request);
+  async requestAuthorization() {
+    return _hapticaPrimitives.requestAuthorization();
   }
 
   /**
